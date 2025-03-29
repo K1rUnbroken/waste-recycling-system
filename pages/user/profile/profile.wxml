@@ -1,0 +1,38 @@
+<!--pages/user/profile/profile.wxml-->
+<view class="container">
+  <view class="header">
+    <image class="avatar" src="{{userInfo.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+    <text class="nickname">{{userInfo.name || '未登录'}}</text>
+    <text class="phone">{{userInfo.phone || ''}}</text>
+  </view>
+
+  <view class="menu-list">
+    <view class="menu-item" bindtap="goToOrders">
+      <view class="menu-item-left">
+        <image class="menu-icon" src="/images/order.png" mode="aspectFit"></image>
+        <text>我的订单</text>
+      </view>
+      <image class="arrow" src="/images/arrow-right.png" mode="aspectFit"></image>
+    </view>
+
+    <view class="menu-item" bindtap="goToKnowledge">
+      <view class="menu-item-left">
+        <image class="menu-icon" src="/images/knowledge.png" mode="aspectFit"></image>
+        <text>回收知识</text>
+      </view>
+      <image class="arrow" src="/images/arrow-right.png" mode="aspectFit"></image>
+    </view>
+
+    <view class="menu-item" bindtap="contactUs">
+      <view class="menu-item-left">
+        <image class="menu-icon" src="/images/contact.png" mode="aspectFit"></image>
+        <text>联系我们</text>
+      </view>
+      <image class="arrow" src="/images/arrow-right.png" mode="aspectFit"></image>
+    </view>
+  </view>
+
+  <view class="logout-btn" bindtap="handleLogout">
+    <text>退出登录</text>
+  </view>
+</view>

@@ -1,0 +1,49 @@
+{
+  "pages": [
+    "pages/login/login",
+    "pages/index/index",
+    "pages/user/index/index",
+    "pages/user/order/order",
+    "pages/user/orderDetail/orderDetail",
+    "pages/user/knowledge/knowledge",
+    "pages/register/register",
+    "pages/admin/login/login",
+    "pages/admin/index/index",
+    "pages/collector/index/index",
+    "pages/collector/orderDetail/orderDetail"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "废品回收小程序",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "custom": false,
+    "color": "#999999",
+    "selectedColor": "#07c160",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/tabbar/home.png",
+        "selectedIconPath": "images/tabbar/home-active.png"
+      },
+      {
+        "pagePath": "pages/user/order/order",
+        "text": "订单",
+        "iconPath": "images/tabbar/order.png",
+        "selectedIconPath": "images/tabbar/order-active.png"
+      },
+      {
+        "pagePath": "pages/user/index/index",
+        "text": "我的",
+        "iconPath": "images/tabbar/profile.png",
+        "selectedIconPath": "images/tabbar/profile-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+} 

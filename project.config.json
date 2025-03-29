@@ -1,0 +1,77 @@
+{
+    "description": "项目配置文件",
+    "packOptions": {
+        "ignore": [],
+        "include": []
+    },
+    "setting": {
+        "bundle": false,
+        "userConfirmedBundleSwitch": false,
+        "urlCheck": false,
+        "scopeDataCheck": false,
+        "coverView": true,
+        "es6": true,
+        "postcss": true,
+        "compileHotReLoad": false,
+        "lazyloadPlaceholderEnable": false,
+        "preloadBackgroundData": false,
+        "minified": true,
+        "autoAudits": false,
+        "newFeature": false,
+        "uglifyFileName": false,
+        "uploadWithSourceMap": true,
+        "useIsolateContext": true,
+        "nodeModules": false,
+        "enhance": true,
+        "useMultiFrameRuntime": true,
+        "useApiHook": true,
+        "useApiHostProcess": true,
+        "showShadowRootInWxmlPanel": true,
+        "packNpmManually": false,
+        "packNpmRelationList": [],
+        "minifyWXSS": true,
+        "babelSetting": {
+            "ignore": [],
+            "disablePlugins": [],
+            "outputPath": ""
+        },
+        "enableEngineNative": false,
+        "useCompilerModule": true,
+        "userConfirmedUseCompilerModuleSwitch": false,
+        "compileWorklet": false,
+        "minifyWXML": true,
+        "localPlugins": false,
+        "disableUseStrict": false,
+        "useCompilerPlugins": false,
+        "condition": false,
+        "swc": false,
+        "disableSWC": true
+    },
+    "compileType": "miniprogram",
+    "libVersion": "2.19.4",
+    "appid": "wx7c076a680969ec1d",
+    "projectname": "recycling-admin",
+    "isGameTourist": false,
+    "condition": {
+        "search": {
+            "list": []
+        },
+        "conversation": {
+            "list": []
+        },
+        "game": {
+            "list": []
+        },
+        "plugin": {
+            "list": []
+        },
+        "gamePlugin": {
+            "list": []
+        },
+        "miniprogram": {
+            "list": []
+        }
+    },
+    "simulatorPluginLibVersion": {},
+    "editorSetting": {}
+}

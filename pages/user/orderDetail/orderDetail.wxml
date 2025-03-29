@@ -1,0 +1,51 @@
+<view class="container">
+  <view class="order-detail" wx:if="{{order}}">
+    <view class="section">
+      <view class="section-title">订单信息</view>
+      <view class="info-item">
+        <text class="label">订单编号</text>
+        <text class="value">{{order.id}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">订单状态</text>
+        <text class="value status {{order.status === '待接单' ? 'pending' : ''}}">{{order.status}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">创建时间</text>
+        <text class="value">{{order.createTime}}</text>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">回收信息</view>
+      <view class="info-item">
+        <text class="label">废品类型</text>
+        <text class="value">{{order.categoryName}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">预估重量</text>
+        <text class="value">{{order.weight}}斤</text>
+      </view>
+      <view class="info-item">
+        <text class="label">回收地址</text>
+        <text class="value">{{order.address}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">预约时间</text>
+        <text class="value">{{order.appointmentDate}} {{order.appointmentTime}}</text>
+      </view>
+      <view class="info-item" wx:if="{{order.remark}}">
+        <text class="label">备注信息</text>
+        <text class="value">{{order.remark}}</text>
+      </view>
+    </view>
+
+    <view class="btn-group" wx:if="{{order.status === '待接单'}}">
+      <button class="btn" bindtap="cancelOrder">取消订单</button>
+    </view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+</view> 

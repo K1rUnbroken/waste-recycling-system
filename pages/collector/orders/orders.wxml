@@ -1,0 +1,85 @@
+<view class="container">
+  <!-- 标签栏 -->
+  <view class="tabs">
+    <view class="tab-item {{activeTab === index ? 'active' : ''}}" 
+          wx:for="{{tabs}}" 
+          wx:key="index"
+          data-index="{{index}}"
+          bindtap="switchTab">
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 订单列表 -->
+  <view class="order-list">
+    <view class="order-item" 
+          wx:for="{{orders}}" 
+          wx:key="id">
+      <view class="order-header">
+        <text class="order-no">订单号：{{item.orderNo}}</text>
+        <text class="order-status {{item.status}}">{{item.statusText}}</text>
+      </view>
+      
+      <view class="order-content">
+        <view class="category-info">
+          <image src="{{item.categoryIcon}}" mode="aspectFit"></image>
+          <text>{{item.categoryName}}</text>
+        </view>
+        <view class="order-info">
+          <view class="info-item">
+            <text class="label">预估重量：</text>
+            <text class="value">{{item.weight}}斤</text>
+          </view>
+          <view class="info-item">
+            <text class="label">预约时间：</text>
+            <text class="value">{{item.appointmentDate}} {{item.appointmentTime}}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">回收地址：</text>
+            <text class="value">{{item.address}}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">用户电话：</text>
+            <text class="value">{{item.userPhone}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="order-footer">
+        <view class="price">
+          <text>预估收益：</text>
+          <text class="amount">¥{{item.estimatedPrice}}</text>
+        </view>
+        <view class="actions">
+          <block wx:if="{{item.status === 'pending'}}">
+            <button class="btn primary" 
+                    catchtap="acceptOrder" 
+                    data-id="{{item.id}}">接单</button>
+          </block>
+          <block wx:if="{{item.status === 'accepted'}}">
+            <button class="btn primary" 
+                    catchtap="completeOrder" 
+                    data-id="{{item.id}}">完成订单</button>
+          </block>
+          <button class="btn default" 
+                  catchtap="contactUser" 
+                  data-phone="{{item.userPhone}}">联系用户</button>
+          <button class="btn default" 
+                  catchtap="viewOrderDetail" 
+                  data-id="{{item.id}}">查看详情</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="no-more" wx:if="{{!hasMore && orders.length > 0}}">
+    <text>没有更多订单了</text>
+  </view>
+  <view class="empty" wx:if="{{!loading && orders.length === 0}}">
+    <text>暂无订单</text>
+  </view>
+</view> 

@@ -1,0 +1,83 @@
+<view class="container">
+  <!-- 搜索框 -->
+  <view class="search-box">
+    <input type="text" 
+           placeholder="搜索订单号/用户/回收人员" 
+           value="{{searchValue}}"
+           bindinput="onSearch"/>
+  </view>
+
+  <!-- 标签栏 -->
+  <view class="tabs">
+    <view class="tab-item {{activeTab === index ? 'active' : ''}}" 
+          wx:for="{{tabs}}" 
+          wx:key="index"
+          data-index="{{index}}"
+          bindtap="switchTab">
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 订单列表 -->
+  <view class="order-list">
+    <view class="order-item" 
+          wx:for="{{orders}}" 
+          wx:key="id">
+      <view class="order-header">
+        <text class="order-no">订单号：{{item.orderNo}}</text>
+        <text class="order-status {{item.status}}">{{item.statusText}}</text>
+      </view>
+      
+      <view class="order-content">
+        <view class="category-info">
+          <image src="{{item.categoryIcon}}" mode="aspectFit"></image>
+          <text>{{item.categoryName}}</text>
+        </view>
+        <view class="order-info">
+          <view class="info-item">
+            <text class="label">预估重量：</text>
+            <text class="value">{{item.weight}}斤</text>
+          </view>
+          <view class="info-item">
+            <text class="label">实际重量：</text>
+            <text class="value">{{item.actualWeight || '-'}}斤</text>
+          </view>
+          <view class="info-item">
+            <text class="label">预估收益：</text>
+            <text class="value">¥{{item.estimatedPrice}}</text>
+          </view>
+          <view class="info-item">
+            <text class="label">实际收益：</text>
+            <text class="value">¥{{item.actualPrice || '-'}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="order-footer">
+        <view class="user-info">
+          <text class="label">用户：</text>
+          <text class="value">{{item.userName}}</text>
+        </view>
+        <view class="collector-info" wx:if="{{item.collectorName}}">
+          <text class="label">回收人员：</text>
+          <text class="value">{{item.collectorName}}</text>
+        </view>
+        <view class="time">{{item.createTime}}</view>
+        <button class="btn default" 
+                catchtap="viewOrderDetail" 
+                data-id="{{item.id}}">查看详情</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="no-more" wx:if="{{!hasMore && orders.length > 0}}">
+    <text>没有更多订单了</text>
+  </view>
+  <view class="empty" wx:if="{{!loading && orders.length === 0}}">
+    <text>暂无订单数据</text>
+  </view>
+</view> 

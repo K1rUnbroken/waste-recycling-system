@@ -1,0 +1,117 @@
+<view class="container">
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  
+  <block wx:if="{{!loading && orderInfo}}">
+    <!-- 订单状态 -->
+    <view class="section status-section">
+      <view class="status-info">
+        <text class="status-text {{orderInfo.status === 'completed' ? 'success' : ''}}">{{orderInfo.statusText}}</text>
+        <text class="status-desc">{{orderInfo.statusDesc}}</text>
+      </view>
+      <view class="order-time">
+        <text>下单时间：{{orderInfo.createTime}}</text>
+        <text wx:if="{{orderInfo.completeTime}}">完成时间：{{orderInfo.completeTime}}</text>
+      </view>
+    </view>
+
+    <!-- 订单信息 -->
+    <view class="section">
+      <view class="section-title">订单信息</view>
+      <view class="info-list">
+        <view class="info-item">
+          <text class="label">订单编号</text>
+          <text class="value">{{orderInfo.orderNo}}</text>
+        </view>
+        <view class="info-item">
+          <text class="label">订单金额</text>
+          <text class="value price">¥{{orderInfo.amount}}</text>
+        </view>
+        <view class="info-item">
+          <text class="label">支付方式</text>
+          <text class="value">{{orderInfo.paymentMethod}}</text>
+        </view>
+        <view class="info-item">
+          <text class="label">支付时间</text>
+          <text class="value">{{orderInfo.payTime || '未支付'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 用户信息 -->
+    <view class="section">
+      <view class="section-title">用户信息</view>
+      <view class="user-info" bindtap="viewUser">
+        <image class="avatar" src="{{orderInfo.userInfo.avatarUrl}}" mode="aspectFill"></image>
+        <view class="user-detail">
+          <text class="nickname">{{orderInfo.userInfo.nickName}}</text>
+          <text class="phone">{{orderInfo.userInfo.phone}}</text>
+        </view>
+        <view class="action-btn" catchtap="makePhoneCall" data-phone="{{orderInfo.userInfo.phone}}">
+          <text class="iconfont icon-phone"></text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 回收员信息 -->
+    <view class="section" wx:if="{{orderInfo.collectorInfo}}">
+      <view class="section-title">回收员信息</view>
+      <view class="collector-info" bindtap="viewCollector">
+        <image class="avatar" src="{{orderInfo.collectorInfo.avatarUrl}}" mode="aspectFill"></image>
+        <view class="collector-detail">
+          <text class="nickname">{{orderInfo.collectorInfo.nickName}}</text>
+          <text class="phone">{{orderInfo.collectorInfo.phone}}</text>
+        </view>
+        <view class="action-btn" catchtap="makePhoneCall" data-phone="{{orderInfo.collectorInfo.phone}}">
+          <text class="iconfont icon-phone"></text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 回收物品信息 -->
+    <view class="section">
+      <view class="section-title">回收物品信息</view>
+      <view class="items-list">
+        <view class="item" wx:for="{{orderInfo.items}}" wx:key="id">
+          <image class="item-image" src="{{item.imageUrl}}" mode="aspectFill"></image>
+          <view class="item-info">
+            <text class="item-name">{{item.name}}</text>
+            <view class="item-detail">
+              <text>预估重量：{{item.estimatedWeight}}kg</text>
+              <text>实际重量：{{item.actualWeight}}kg</text>
+              <text>单价：¥{{item.price}}/kg</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 地址信息 -->
+    <view class="section">
+      <view class="section-title">地址信息</view>
+      <view class="address-info">
+        <view class="address-detail">
+          <text class="name">{{orderInfo.address.name}}</text>
+          <text class="phone">{{orderInfo.address.phone}}</text>
+          <text class="address">{{orderInfo.address.province}}{{orderInfo.address.city}}{{orderInfo.address.district}}{{orderInfo.address.detail}}</text>
+        </view>
+        <view class="action-btn" catchtap="makePhoneCall" data-phone="{{orderInfo.address.phone}}">
+          <text class="iconfont icon-phone"></text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 备注信息 -->
+    <view class="section" wx:if="{{orderInfo.remark}}">
+      <view class="section-title">备注信息</view>
+      <view class="remark-content">
+        <text>{{orderInfo.remark}}</text>
+      </view>
+    </view>
+  </block>
+
+  <view class="empty" wx:if="{{!loading && !orderInfo}}">
+    <text>订单信息不存在</text>
+  </view>
+</view> 

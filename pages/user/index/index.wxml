@@ -1,0 +1,44 @@
+<!--pages/user/index/index.wxml-->
+<view class="container">
+  <!-- 用户信息区域 -->
+  <view class="user-info">
+    <image class="avatar" src="{{userInfo.avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+    <view class="info">
+      <text class="nickname">{{userInfo.name || '未登录'}}</text>
+      <text class="phone">{{userInfo.phone || ''}}</text>
+    </view>
+  </view>
+
+  <!-- 功能列表 -->
+  <view class="menu-list">
+    <!-- 我的订单 -->
+    <view class="menu-item" bindtap="goToOrders">
+      <view class="menu-item-left">
+        <image class="menu-icon" src="/images/order.png"></image>
+        <text class="menu-text">我的订单</text>
+      </view>
+      <image class="arrow" src="/images/arrow-right.png"></image>
+    </view>
+
+    <!-- 回收知识 -->
+    <view class="menu-item" bindtap="goToKnowledge">
+      <view class="menu-item-left">
+        <image class="menu-icon" src="/images/knowledge.png"></image>
+        <text class="menu-text">回收知识</text>
+      </view>
+      <image class="arrow" src="/images/arrow-right.png"></image>
+    </view>
+
+    <!-- 联系客服 -->
+    <view class="menu-item" bindtap="contactService">
+      <view class="menu-item-left">
+        <image class="menu-icon" src="/images/contact.png"></image>
+        <text class="menu-text">联系客服</text>
+      </view>
+      <image class="arrow" src="/images/arrow-right.png"></image>
+    </view>
+  </view>
+
+  <!-- 退出登录按钮 -->
+  <view class="logout-btn" bindtap="logout">退出登录</view>
+</view>

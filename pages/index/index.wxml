@@ -1,0 +1,69 @@
+<view class="container">
+  <view class="header">
+    <text class="title">预约回收</text>
+  </view>
+
+  <!-- 回收类别选择 -->
+  <view class="section">
+    <view class="section-title">选择回收类别</view>
+    <view class="category-list">
+      <view class="category-item {{selectedCategory.id === item.id ? 'selected' : ''}}"
+            wx:for="{{categories}}"
+            wx:key="id"
+            bindtap="selectCategory"
+            data-index="{{index}}">
+        <view class="icon-wrapper">
+          <text class="iconfont {{item.icon}}"></text>
+        </view>
+        <text>{{item.name}}</text>
+        <text class="price">{{item.price}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 预约信息表单 -->
+  <view class="section">
+    <view class="section-title">预约信息</view>
+    <view class="form-item">
+      <text>预估重量（斤）</text>
+      <input type="digit" 
+             value="{{weight}}"
+             placeholder="请输入预估重量" 
+             bindinput="inputWeight"/>
+    </view>
+    <view class="form-item">
+      <text>回收地址</text>
+      <textarea value="{{address}}"
+                placeholder="请输入详细地址" 
+                bindinput="inputAddress"/>
+    </view>
+    <view class="form-item">
+      <text>预约日期</text>
+      <picker mode="date" 
+              value="{{appointmentDate}}" 
+              start="{{appointmentDate}}" 
+              bindchange="bindDateChange">
+        <view class="picker">{{appointmentDate || '请选择日期'}}</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text>预约时间</text>
+      <picker mode="time" 
+              value="{{appointmentTime}}" 
+              start="09:00" 
+              end="18:00" 
+              bindchange="bindTimeChange">
+        <view class="picker">{{appointmentTime || '请选择时间'}}</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <text>备注信息（选填）</text>
+      <textarea value="{{remark}}"
+                placeholder="请输入备注信息" 
+                bindinput="inputRemark"/>
+    </view>
+  </view>
+
+  <!-- 提交按钮 -->
+  <button class="submit-btn" bindtap="submitOrder">提交预约</button>
+</view> 

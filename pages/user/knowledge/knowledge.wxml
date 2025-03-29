@@ -1,0 +1,12 @@
+<!--pages/user/knowledge/knowledge.wxml-->
+<view class="container">
+  <view class="article-list">
+    <view class="article-item" wx:for="{{articles}}" wx:key="id">
+      <view class="article-title">{{item.title}}</view>
+      <view class="article-content">{{item.content}}</view>
+      <view class="article-footer">
+        <text class="article-time">{{item.time}}</text>
+      </view>
+    </view>
+  </view>
+</view>

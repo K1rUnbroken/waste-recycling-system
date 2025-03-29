@@ -1,0 +1,102 @@
+<view class="container">
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  
+  <block wx:if="{{!loading}}">
+    <!-- 数据概览 -->
+    <view class="section overview">
+      <view class="section-title">数据概览</view>
+      <view class="overview-grid">
+        <view class="overview-item">
+          <text class="item-value">{{overview.totalOrders}}</text>
+          <text class="item-label">总订单数</text>
+        </view>
+        <view class="overview-item">
+          <text class="item-value">{{overview.totalUsers}}</text>
+          <text class="item-label">总用户数</text>
+        </view>
+        <view class="overview-item">
+          <text class="item-value">{{overview.totalCollectors}}</text>
+          <text class="item-label">回收员数</text>
+        </view>
+        <view class="overview-item">
+          <text class="item-value">¥{{overview.totalIncome}}</text>
+          <text class="item-label">总收益</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 今日数据 -->
+    <view class="section today">
+      <view class="section-title">今日数据</view>
+      <view class="today-grid">
+        <view class="today-item">
+          <text class="item-label">今日订单</text>
+          <text class="item-value">{{today.orders}}</text>
+        </view>
+        <view class="today-item">
+          <text class="item-label">今日收入</text>
+          <text class="item-value">¥{{today.income}}</text>
+        </view>
+        <view class="today-item">
+          <text class="item-label">新增用户</text>
+          <text class="item-value">{{today.newUsers}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷操作 -->
+    <view class="section">
+      <view class="section-title">快捷操作</view>
+      <view class="quick-actions">
+        <view class="action-item" bindtap="goToOrderManage">
+          <image class="action-icon" src="/images/admin/order.png" mode="aspectFit"></image>
+          <text class="action-text">订单管理</text>
+        </view>
+        <view class="action-item" bindtap="goToUserManage">
+          <image class="action-icon" src="/images/admin/user.png" mode="aspectFit"></image>
+          <text class="action-text">用户管理</text>
+        </view>
+        <view class="action-item" bindtap="goToCollectorManage">
+          <image class="action-icon" src="/images/admin/collector.png" mode="aspectFit"></image>
+          <text class="action-text">回收员管理</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最近订单 -->
+    <view class="section">
+      <view class="section-title">最近订单</view>
+      <view class="list">
+        <view class="empty" wx:if="{{!recentOrders.length}}">暂无订单数据</view>
+        <view class="order-item" wx:for="{{recentOrders}}" wx:key="id">
+          <view class="order-info">
+            <text class="order-id">订单号：{{item.orderNo}}</text>
+            <text class="order-status">{{item.status}}</text>
+          </view>
+          <view class="order-detail">
+            <text class="order-time">{{item.createTime}}</text>
+            <text class="order-amount">¥{{item.amount}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 最近用户 -->
+    <view class="section">
+      <view class="section-title">最近用户</view>
+      <view class="list">
+        <view class="empty" wx:if="{{!recentUsers.length}}">暂无用户数据</view>
+        <view class="user-item" wx:for="{{recentUsers}}" wx:key="id">
+          <image class="user-avatar" src="{{item.avatar || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+          <view class="user-info">
+            <text class="user-name">{{item.name}}</text>
+            <text class="user-phone">{{item.phone}}</text>
+          </view>
+          <text class="join-time">{{item.createTime}}</text>
+        </view>
+      </view>
+    </view>
+  </block>
+</view> 

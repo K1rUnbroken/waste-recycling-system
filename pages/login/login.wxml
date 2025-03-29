@@ -1,0 +1,62 @@
+<!--pages/login/login.wxml-->
+<view class="container">
+  <view class="header">
+    <text class="title">登录</text>
+  </view>
+
+  <!-- 角色选择 -->
+  <view class="role-select">
+    <view class="role-item {{loginType === 'user' ? 'active' : ''}}" 
+          bindtap="switchType" data-type="user">
+      <text>用户</text>
+    </view>
+    <view class="role-item {{loginType === 'collector' ? 'active' : ''}}" 
+          bindtap="switchType" data-type="collector">
+      <text>回收人员</text>
+    </view>
+    <view class="role-item {{loginType === 'admin' ? 'active' : ''}}" 
+          bindtap="switchType" data-type="admin">
+      <text>管理人员</text>
+    </view>
+  </view>
+
+  <view class="form">
+    <view class="form-item">
+      <text class="label">{{loginType === 'admin' ? '用户名' : '手机号'}}</text>
+      <input type="{{loginType === 'admin' ? 'text' : 'number'}}" 
+             value="{{account}}"
+             placeholder="{{loginType === 'admin' ? '请输入用户名' : '请输入手机号'}}" 
+             bindinput="inputAccount"/>
+    </view>
+    <view class="form-item">
+      <text class="label">密码</text>
+      <input type="password" 
+             value="{{password}}"
+             placeholder="请输入密码" 
+             bindinput="inputPassword"/>
+    </view>
+  </view>
+
+  <button class="submit-btn" bindtap="login">登录</button>
+
+  <!-- 测试账号提示 -->
+  <view class="tips">
+    <block wx:if="{{loginType === 'user'}}">
+      <text>测试账号：13048300784</text>
+      <text>密码：kuangyiran666</text>
+    </block>
+    <block wx:if="{{loginType === 'collector'}}">
+      <text>测试账号：13800138000</text>
+      <text>密码：123456</text>
+    </block>
+    <block wx:if="{{loginType === 'admin'}}">
+      <text>测试账号：admin</text>
+      <text>密码：admin123</text>
+    </block>
+  </view>
+
+  <!-- 注册入口 -->
+  <view class="register-link" wx:if="{{loginType === 'user'}}">
+    <text bindtap="goToRegister">还没有账号？立即注册</text>
+  </view>
+</view>

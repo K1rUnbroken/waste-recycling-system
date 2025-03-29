@@ -1,0 +1,132 @@
+<view class="container">
+  <view class="order-detail" wx:if="{{order}}">
+    <!-- 状态栏 -->
+    <view class="status-section">
+      <view class="status-info">
+        <text class="status-text">{{order.status}}</text>
+        <text class="status-desc">{{statusDesc}}</text>
+      </view>
+      <view class="status-progress">
+        <view class="progress-item {{order.status !== '已取消' ? 'active' : ''}}">
+          <view class="dot"></view>
+          <text>接单</text>
+        </view>
+        <view class="progress-item {{['服务中', '已完成'].includes(order.status) ? 'active' : ''}}">
+          <view class="dot"></view>
+          <text>上门</text>
+        </view>
+        <view class="progress-item {{order.status === '已完成' ? 'active' : ''}}">
+          <view class="dot"></view>
+          <text>完成</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 订单信息 -->
+    <view class="section">
+      <view class="section-title">订单信息</view>
+      <view class="info-item">
+        <text class="label">订单编号</text>
+        <text class="value">{{order.id}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">下单时间</text>
+        <text class="value">{{order.createTime}}</text>
+      </view>
+      <view class="info-item" wx:if="{{order.acceptTime}}">
+        <text class="label">接单时间</text>
+        <text class="value">{{order.acceptTime}}</text>
+      </view>
+      <view class="info-item" wx:if="{{order.completeTime}}">
+        <text class="label">完成时间</text>
+        <text class="value">{{order.completeTime}}</text>
+      </view>
+    </view>
+
+    <!-- 回收信息 -->
+    <view class="section">
+      <view class="section-title">回收信息</view>
+      <view class="info-item">
+        <text class="label">废品类型</text>
+        <text class="value">{{order.categoryName}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">预估重量</text>
+        <text class="value">{{order.weight}}斤</text>
+      </view>
+      <view class="info-item" wx:if="{{order.actualWeight}}">
+        <text class="label">实际重量</text>
+        <text class="value">{{order.actualWeight}}斤</text>
+      </view>
+      <view class="info-item" wx:if="{{order.amount}}">
+        <text class="label">结算金额</text>
+        <text class="value price">¥{{order.amount}}</text>
+      </view>
+    </view>
+
+    <!-- 用户信息 -->
+    <view class="section">
+      <view class="section-title">用户信息</view>
+      <view class="info-item">
+        <text class="label">联系人</text>
+        <text class="value">{{order.userName}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">回收地址</text>
+        <text class="value">{{order.address}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">预约时间</text>
+        <text class="value">{{order.appointmentDate}} {{order.appointmentTime}}</text>
+      </view>
+      <view class="info-item" wx:if="{{order.remark}}">
+        <text class="label">备注信息</text>
+        <text class="value">{{order.remark}}</text>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="footer" wx:if="{{order.status === '待上门' || order.status === '服务中'}}">
+      <block wx:if="{{order.status === '待上门'}}">
+        <button class="btn primary" bindtap="startService">开始上门</button>
+      </block>
+      <block wx:if="{{order.status === '服务中'}}">
+        <button class="btn primary" bindtap="showCompleteModal">完成订单</button>
+      </block>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 完成订单弹窗 -->
+  <view class="modal" wx:if="{{showCompleteModal}}">
+    <view class="modal-content">
+      <view class="modal-header">
+        <text class="modal-title">完成订单</text>
+      </view>
+      <view class="modal-body">
+        <view class="form-item">
+          <text class="label">实际重量（斤）</text>
+          <input type="digit" 
+                 value="{{actualWeight}}"
+                 placeholder="请输入实际重量"
+                 bindinput="inputActualWeight"/>
+        </view>
+        <view class="form-item">
+          <text class="label">结算金额（元）</text>
+          <input type="digit" 
+                 value="{{amount}}"
+                 placeholder="请输入结算金额"
+                 bindinput="inputAmount"/>
+        </view>
+      </view>
+      <view class="modal-footer">
+        <button class="btn" bindtap="hideCompleteModal">取消</button>
+        <button class="btn primary" bindtap="completeOrder">确认</button>
+      </view>
+    </view>
+  </view>
+</view> 

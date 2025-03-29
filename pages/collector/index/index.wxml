@@ -1,0 +1,81 @@
+<view class="container">
+  <!-- 顶部状态栏 -->
+  <view class="status-bar">
+    <view class="status-info">
+      <text class="name">{{collectorInfo.name}}</text>
+      <text class="status {{collectorInfo.status === '在线' ? 'online' : ''}}">{{collectorInfo.status}}</text>
+    </view>
+    <view class="stats">
+      <view class="stat-item">
+        <text class="value">{{collectorInfo.orderCount}}</text>
+        <text class="label">总订单</text>
+      </view>
+      <view class="stat-item">
+        <text class="value">¥{{collectorInfo.totalIncome}}</text>
+        <text class="label">总收益</text>
+      </view>
+      <view class="stat-item">
+        <text class="value">{{collectorInfo.rating}}</text>
+        <text class="label">评分</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 标签栏 -->
+  <view class="tabs">
+    <view class="tab-item {{activeTab === index ? 'active' : ''}}" 
+          wx:for="{{tabs}}" 
+          wx:key="index"
+          data-index="{{index}}"
+          bindtap="switchTab">
+      {{item}}
+    </view>
+  </view>
+
+  <!-- 订单列表 -->
+  <view class="order-list">
+    <view class="order-item" wx:for="{{orders}}" wx:key="id" bindtap="goToDetail" data-id="{{item.id}}">
+      <view class="order-header">
+        <text class="order-id">订单号：{{item.id}}</text>
+        <text class="order-status {{item.status === '待接单' ? 'pending' : ''}}">{{item.status}}</text>
+      </view>
+      <view class="order-content">
+        <view class="order-info">
+          <text class="label">废品类型：</text>
+          <text class="value">{{item.categoryName}}</text>
+        </view>
+        <view class="order-info">
+          <text class="label">预估重量：</text>
+          <text class="value">{{item.weight}}斤</text>
+        </view>
+        <view class="order-info">
+          <text class="label">回收地址：</text>
+          <text class="value">{{item.address}}</text>
+        </view>
+        <view class="order-info">
+          <text class="label">预约时间：</text>
+          <text class="value">{{item.appointmentDate}} {{item.appointmentTime}}</text>
+        </view>
+      </view>
+      <view class="order-footer">
+        <text class="create-time">{{item.createTime}}</text>
+        <view class="btn-group">
+          <button class="btn primary" wx:if="{{item.status === '待接单'}}" 
+                  catchtap="acceptOrder" data-id="{{item.id}}">接单</button>
+          <button class="btn" catchtap="goToDetail" data-id="{{item.id}}">查看详情</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="no-more" wx:if="{{!hasMore && orders.length > 0}}">
+    <text>没有更多订单了</text>
+  </view>
+  <view class="empty" wx:if="{{!loading && orders.length === 0}}">
+    <text>暂无订单</text>
+  </view>
+</view> 

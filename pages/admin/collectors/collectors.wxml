@@ -1,0 +1,77 @@
+<view class="container">
+  <!-- 搜索框 -->
+  <view class="search-box">
+    <input type="text" 
+           placeholder="搜索回收人员" 
+           value="{{searchValue}}"
+           bindinput="onSearch"/>
+  </view>
+
+  <!-- 回收人员列表 -->
+  <view class="collector-list">
+    <view class="collector-item" 
+          wx:for="{{collectors}}" 
+          wx:key="id">
+      <view class="collector-info">
+        <image class="avatar" src="{{item.avatar}}" mode="aspectFill"></image>
+        <view class="info">
+          <text class="name">{{item.nickname}}</text>
+          <text class="phone">{{item.phone}}</text>
+        </view>
+        <view class="status {{item.status === 1 ? 'active' : 'disabled'}}">
+          {{item.status === 1 ? '正常' : '已禁用'}}
+        </view>
+      </view>
+      
+      <view class="collector-stats">
+        <view class="stat-item">
+          <text class="label">订单数</text>
+          <text class="value">{{item.orderCount}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="label">总收益</text>
+          <text class="value">¥{{item.totalIncome}}</text>
+        </view>
+        <view class="stat-item">
+          <text class="label">评分</text>
+          <text class="value">{{item.rating}}</text>
+        </view>
+      </view>
+
+      <view class="actions">
+        <block wx:if="{{item.reviewStatus === 0}}">
+          <button class="btn success" 
+                  catchtap="reviewCollector" 
+                  data-id="{{item.id}}"
+                  data-status="1">通过</button>
+          <button class="btn danger" 
+                  catchtap="reviewCollector" 
+                  data-id="{{item.id}}"
+                  data-status="2">拒绝</button>
+        </block>
+        <block wx:else>
+          <button class="btn default" 
+                  catchtap="viewCollectorDetail" 
+                  data-id="{{item.id}}">查看详情</button>
+          <button class="btn {{item.status === 1 ? 'danger' : 'success'}}" 
+                  catchtap="toggleCollectorStatus" 
+                  data-id="{{item.id}}"
+                  data-status="{{item.status}}">
+            {{item.status === 1 ? '禁用' : '启用'}}
+          </button>
+        </block>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载状态 -->
+  <view class="loading" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+  <view class="no-more" wx:if="{{!hasMore && collectors.length > 0}}">
+    <text>没有更多回收人员了</text>
+  </view>
+  <view class="empty" wx:if="{{!loading && collectors.length === 0}}">
+    <text>暂无回收人员数据</text>
+  </view>
+</view> 
