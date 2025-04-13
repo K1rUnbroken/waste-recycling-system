@@ -133,7 +133,7 @@ Page({
       url: `${app.globalData.baseUrl}/orders`,
       method: 'POST',
       header: {
-        'Authorization': `Bearer ${token}`, // 确保token格式正确
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
       data: {

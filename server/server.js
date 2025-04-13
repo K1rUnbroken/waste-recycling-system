@@ -2,6 +2,7 @@ const express = require('express')
 const cors = require('cors')
 const jwt = require('jsonwebtoken')
 const bodyParser = require('body-parser')
+const db = require('./config/database')
 
 const app = express()
 const port = 3000
@@ -12,115 +13,161 @@ app.use(bodyParser.json())
 
 // 添加请求日志中间件
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`)
-  console.log('请求体:', req.body)
+  // 只记录非GET请求的请求体
+  if (req.method !== 'GET') {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`)
+    if (Object.keys(req.body).length > 0) {
+      // 如果是密码相关的请求，隐藏密码
+      const safeBody = { ...req.body }
+      if (safeBody.password) {
+        safeBody.password = '******'
+      }
+      console.log('请求数据:', safeBody)
+    }
+  }
   next()
 })
 
-// 模拟数据库
-const users = [
-  {
-    id: 1,
-    phone: '13048300784',
-    name: 'kyr',
-    password: 'kuangyiran666'
-  }
-] // 添加默认用户
-
-// 添加回收人员数据
-const collectors = [
-  {
-    id: 1,
-    phone: '13800138000',
-    name: '张师傅',
-    password: '123456',
-    idCard: '330102199001011234',
-    status: '在线',
-    totalIncome: 0,
-    rating: 5.0,
-    orderCount: 0
-  }
-]
-
-const orders = [] // 添加订单数组
 const JWT_SECRET = 'your-secret-key'
 
+// 验证管理员token的中间件
+const verifyAdminToken = (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) {
+    console.log('[认证失败] 未提供token')
+    return res.status(401).json({
+      success: false,
+      message: '未提供token'
+    })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (!decoded.isAdmin) {
+      console.log('[认证失败] 非管理员token')
+      return res.status(401).json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+    req.admin = decoded
+    next()
+  } catch (err) {
+    console.error('[认证失败] token验证失败:', err.message)
+    res.status(401).json({
+      success: false,
+      message: 'token无效或已过期'
+    })
+  }
+}
+
+// 在文件开头添加计算预估金额的函数
+function calculateEstimatedAmount(categoryId, weight) {
+  const priceMap = {
+    1: 1.0, // 废纸
+    2: 0.8, // 塑料
+    3: 2.5, // 金属
+    4: 0.3  // 玻璃
+  }
+  return (priceMap[categoryId] || 0) * parseFloat(weight)
+}
+
 // 用户注册
-app.post('/api/user/register', (req, res) => {
+app.post('/user/register', async (req, res) => {
   console.log('收到注册请求:', req.body)
-  const { phone, name, password } = req.body
+  const { phone, password, name } = req.body
 
-  // 检查请求数据是否完整
-  if (!phone || !name || !password) {
-    console.log('注册信息不完整')
-    return res.json({
+  try {
+    // 检查手机号是否已注册
+    const [existingUsers] = await db.query('SELECT * FROM users WHERE phone = ?', [phone])
+    if (existingUsers.length > 0) {
+      return res.json({
+        success: false,
+        message: '该手机号已注册'
+      })
+    }
+
+    // 创建新用户
+    const [result] = await db.query(
+      'INSERT INTO users (phone, password, name) VALUES (?, ?, ?)',
+      [phone, password, name]
+    )
+
+    const userId = result.insertId
+    const token = jwt.sign(
+      { id: userId, phone },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.json({
+      success: true,
+      token,
+      userInfo: {
+        id: userId,
+        phone,
+        name
+      }
+    })
+  } catch (err) {
+    console.error('注册失败:', err)
+    res.json({
       success: false,
-      message: '请填写完整信息'
+      message: '注册失败'
     })
   }
-
-  // 检查手机号是否已注册
-  if (users.find(user => user.phone === phone)) {
-    console.log('手机号已注册:', phone)
-    return res.json({
-      success: false,
-      message: '该手机号已注册'
-    })
-  }
-
-  // 创建新用户
-  const user = {
-    id: users.length + 1,
-    phone,
-    name,
-    password // 实际应用中应该加密存储
-  }
-
-  users.push(user)
-  console.log('注册成功，当前用户列表:', users)
-
-  res.json({
-    success: true,
-    message: '注册成功'
-  })
 })
 
 // 用户登录
-app.post('/api/user/login', (req, res) => {
+app.post('/user/login', async (req, res) => {
   console.log('收到登录请求:', req.body)
   const { phone, password } = req.body
 
-  const user = users.find(u => u.phone === phone && u.password === password)
+  try {
+    const [users] = await db.query('SELECT * FROM users WHERE phone = ?', [phone])
+    if (users.length === 0) {
+      return res.json({
+        success: false,
+        message: '用户不存在'
+      })
+    }
 
-  if (!user) {
-    console.log('登录失败：用户不存在或密码错误')
-    return res.json({
+    const user = users[0]
+    if (user.password !== password) {
+      return res.json({
+        success: false,
+        message: '密码错误'
+      })
+    }
+
+    const token = jwt.sign(
+      { id: user.id, phone: user.phone },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    console.log('登录成功:', user)
+
+    res.json({
+      success: true,
+      token,
+      userInfo: {
+        id: user.id,
+        phone: user.phone,
+        name: user.name
+      }
+    })
+  } catch (err) {
+    console.error('登录失败:', err)
+    res.json({
       success: false,
-      message: '手机号或密码错误'
+      message: '登录失败'
     })
   }
-
-  // 生成 token
-  const token = jwt.sign(
-    { id: user.id, phone: user.phone },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  )
-
-  console.log('登录成功:', user)
-  res.json({
-    success: true,
-    token,
-    userInfo: {
-      id: user.id,
-      phone: user.phone,
-      name: user.name
-    }
-  })
 })
 
 // 验证用户 token
-app.get('/api/user/check-token', (req, res) => {
+app.get('/user/check-token', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
 
   if (!token) {
@@ -132,15 +179,16 @@ app.get('/api/user/check-token', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    const user = users.find(u => u.id === decoded.id)
+    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [decoded.id])
 
-    if (!user) {
+    if (users.length === 0) {
       return res.json({
         success: false,
         message: '用户不存在'
       })
     }
 
+    const user = users[0]
     res.json({
       success: true,
       userInfo: {
@@ -158,13 +206,29 @@ app.get('/api/user/check-token', (req, res) => {
 })
 
 // 管理员登录
-app.post('/api/admin/login', (req, res) => {
+app.post('/admin/login', async (req, res) => {
+  console.log('收到管理员登录请求:', req.body)
   const { username, password } = req.body
 
-  // 这里使用硬编码的管理员账号，实际应用中应该从数据库获取
-  if (username === 'admin' && password === 'admin123') {
+  try {
+    const [admins] = await db.query('SELECT * FROM users WHERE phone = ?', [username])
+    if (admins.length === 0) {
+      return res.json({
+        success: false,
+        message: '管理员不存在'
+      })
+    }
+
+    const admin = admins[0]
+    if (admin.password !== password) {
+      return res.json({
+        success: false,
+        message: '密码错误'
+      })
+    }
+
     const token = jwt.sign(
-      { id: 0, username, isAdmin: true },
+      { id: admin.id, username: admin.phone, isAdmin: true },
       JWT_SECRET,
       { expiresIn: '7d' }
     )
@@ -173,21 +237,115 @@ app.post('/api/admin/login', (req, res) => {
       success: true,
       token,
       adminInfo: {
-        id: 0,
-        username,
-        isAdmin: true
+        id: admin.id,
+        username: admin.phone,
+        name: admin.name
       }
     })
-  } else {
+  } catch (err) {
+    console.error('管理员登录失败:', err)
     res.json({
       success: false,
-      message: '用户名或密码错误'
+      message: '登录失败'
     })
   }
 })
 
-// 验证管理员 token
-app.get('/api/admin/check-token', (req, res) => {
+// 验证管理员token
+app.get('/admin/check-token', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  
+  if (!token) {
+    return res.json({
+      success: false,
+      message: '未提供token'
+    })
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (!decoded.isAdmin) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+    
+    const [admins] = await db.query('SELECT * FROM users WHERE id = ?', [decoded.id])
+    if (admins.length === 0) {
+      return res.json({
+        success: false,
+        message: '管理员不存在'
+      })
+    }
+    
+    const admin = admins[0]
+    res.json({
+      success: true,
+      adminInfo: {
+        id: admin.id,
+        username: admin.phone,
+        name: admin.name,
+        isAdmin: true
+      }
+    })
+  } catch (err) {
+    console.error('验证管理员token失败:', err)
+    res.json({
+      success: false,
+      message: 'token无效'
+    })
+  }
+})
+
+// 回收人员登录
+app.post('/collector/login', async (req, res) => {
+  console.log('收到回收人员登录请求:', req.body)
+  const { phone, password } = req.body
+
+  try {
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE phone = ?', [phone])
+    if (collectors.length === 0) {
+      return res.json({
+        success: false,
+        message: '回收人员不存在'
+      })
+    }
+
+    const collector = collectors[0]
+    if (collector.password !== password) {
+      return res.json({
+        success: false,
+        message: '密码错误'
+      })
+    }
+
+    const token = jwt.sign(
+      { id: collector.id, phone: collector.phone },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    )
+
+    res.json({
+      success: true,
+      token,
+      collectorInfo: {
+        id: collector.id,
+        phone: collector.phone,
+        name: collector.name
+      }
+    })
+  } catch (err) {
+    console.error('回收人员登录失败:', err)
+    res.json({
+      success: false,
+      message: '登录失败'
+    })
+  }
+})
+
+// 验证回收人员 token
+app.get('/collector/check-token', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
 
   if (!token) {
@@ -200,95 +358,16 @@ app.get('/api/admin/check-token', (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
     
-    if (!decoded.isAdmin) {
-      return res.json({
-        success: false,
-        message: '无权限访问'
-      })
-    }
-
-    res.json({
-      success: true,
-      adminInfo: {
-        id: decoded.id,
-        username: decoded.username,
-        isAdmin: decoded.isAdmin
-      }
-    })
-  } catch (err) {
-    res.json({
-      success: false,
-      message: 'token 无效'
-    })
-  }
-})
-
-// 回收人员登录
-app.post('/api/collector/login', (req, res) => {
-  console.log('收到回收人员登录请求:', req.body)
-  const { phone, password } = req.body
-
-  const collector = collectors.find(c => c.phone === phone && c.password === password)
-
-  if (!collector) {
-    console.log('登录失败：回收人员不存在或密码错误')
-    return res.json({
-      success: false,
-      message: '手机号或密码错误'
-    })
-  }
-
-  // 生成 token
-  const token = jwt.sign(
-    { id: collector.id, phone: collector.phone, isCollector: true },
-    JWT_SECRET,
-    { expiresIn: '7d' }
-  )
-
-  console.log('回收人员登录成功:', collector)
-  res.json({
-    success: true,
-    token,
-    collectorInfo: {
-      id: collector.id,
-      phone: collector.phone,
-      name: collector.name,
-      status: collector.status,
-      totalIncome: collector.totalIncome,
-      rating: collector.rating,
-      orderCount: collector.orderCount
-    }
-  })
-})
-
-// 验证回收人员 token
-app.get('/api/collector/check-token', (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1]
-
-  if (!token) {
-    return res.json({
-      success: false,
-      message: '未提供 token'
-    })
-  }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET)
-    if (!decoded.isCollector) {
-      return res.json({
-        success: false,
-        message: '无权限访问'
-      })
-    }
-
-    const collector = collectors.find(c => c.id === decoded.id)
-    if (!collector) {
+    // 验证回收人员身份
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE id = ?', [decoded.id])
+    if (collectors.length === 0) {
       return res.json({
         success: false,
         message: '回收人员不存在'
       })
     }
 
+    const collector = collectors[0]
     res.json({
       success: true,
       collectorInfo: {
@@ -296,12 +375,13 @@ app.get('/api/collector/check-token', (req, res) => {
         phone: collector.phone,
         name: collector.name,
         status: collector.status,
-        totalIncome: collector.totalIncome,
+        totalIncome: collector.total_income,
         rating: collector.rating,
-        orderCount: collector.orderCount
+        orderCount: collector.order_count
       }
     })
   } catch (err) {
+    console.error('验证回收人员token失败:', err)
     res.json({
       success: false,
       message: 'token 无效'
@@ -310,7 +390,7 @@ app.get('/api/collector/check-token', (req, res) => {
 })
 
 // 获取待接单列表
-app.get('/api/collector/orders/pending', (req, res) => {
+app.get('/collector/orders/pending', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -321,19 +401,46 @@ app.get('/api/collector/orders/pending', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    if (!decoded.isCollector) {
+    
+    // 验证回收人员身份
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE id = ?', [decoded.id])
+    if (collectors.length === 0) {
       return res.json({
         success: false,
         message: '无权限访问'
       })
     }
 
-    const pendingOrders = orders.filter(order => order.status === '待接单')
+    // 从数据库中查询待接单订单
+    const [orders] = await db.query(`
+      SELECT 
+        id,
+        user_id as userId,
+        user_name as userName,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        create_time as createTime
+      FROM orders 
+      WHERE status = '待接单'
+      ORDER BY create_time DESC
+    `)
+
     res.json({
       success: true,
-      data: pendingOrders
+      data: orders.map(order => ({
+        ...order,
+        createTime: new Date(order.createTime).toLocaleString()
+      }))
     })
   } catch (err) {
+    console.error('获取待接单列表失败:', err)
     res.json({
       success: false,
       message: 'token无效'
@@ -342,7 +449,7 @@ app.get('/api/collector/orders/pending', (req, res) => {
 })
 
 // 接单
-app.post('/api/collector/orders/:id/accept', (req, res) => {
+app.post('/collector/orders/:id/accept', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -353,23 +460,28 @@ app.post('/api/collector/orders/:id/accept', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    if (!decoded.isCollector) {
+    
+    // 验证回收人员身份
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE id = ?', [decoded.id])
+    if (collectors.length === 0) {
       return res.json({
         success: false,
         message: '无权限访问'
       })
     }
 
-    const collector = collectors.find(c => c.id === decoded.id)
-    const order = orders.find(o => o.id === parseInt(req.params.id))
+    const collector = collectors[0]
 
-    if (!order) {
+    // 从数据库中查询订单
+    const [orders] = await db.query('SELECT * FROM orders WHERE id = ?', [req.params.id])
+    if (orders.length === 0) {
       return res.json({
         success: false,
         message: '订单不存在'
       })
     }
 
+    const order = orders[0]
     if (order.status !== '待接单') {
       return res.json({
         success: false,
@@ -377,19 +489,48 @@ app.post('/api/collector/orders/:id/accept', (req, res) => {
       })
     }
 
-    // 更新订单信息
-    order.status = '待上门'
-    order.collectorId = collector.id
-    order.collectorName = collector.name
-    order.collectorPhone = collector.phone
-    order.acceptTime = new Date().toISOString()
+    // 更新订单状态
+    await db.query(
+      'UPDATE orders SET status = ?, collector_id = ?, collector_name = ?, collector_phone = ?, accept_time = NOW() WHERE id = ?',
+      ['待上门', collector.id, collector.name, collector.phone, req.params.id]
+    )
+
+    // 重新获取更新后的订单信息
+    const [updatedOrders] = await db.query(`
+      SELECT 
+        id,
+        user_id as userId,
+        user_name as userName,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        create_time as createTime,
+        collector_id as collectorId,
+        collector_name as collectorName,
+        collector_phone as collectorPhone,
+        accept_time as acceptTime
+      FROM orders 
+      WHERE id = ?`,
+      [req.params.id]
+    )
 
     res.json({
       success: true,
       message: '接单成功',
-      data: order
+      data: {
+        ...updatedOrders[0],
+        createTime: new Date(updatedOrders[0].createTime).toLocaleString(),
+        acceptTime: updatedOrders[0].acceptTime ? new Date(updatedOrders[0].acceptTime).toLocaleString() : null
+      }
     })
   } catch (err) {
+    console.error('接单失败:', err)
     res.json({
       success: false,
       message: 'token无效'
@@ -398,15 +539,12 @@ app.post('/api/collector/orders/:id/accept', (req, res) => {
 })
 
 // 创建订单
-app.post('/api/orders', (req, res) => {
+app.post('/orders', async (req, res) => {
   console.log('收到创建订单请求')
-  console.log('请求头:', req.headers)
-  
   const token = req.headers.authorization?.split(' ')[1]
   console.log('Token:', token)
-  
+
   if (!token) {
-    console.log('未提供token')
     return res.json({
       success: false,
       message: '请先登录'
@@ -414,68 +552,60 @@ app.post('/api/orders', (req, res) => {
   }
 
   try {
-    console.log('开始验证token')
     const decoded = jwt.verify(token, JWT_SECRET)
     console.log('token解析结果:', decoded)
-    
-    const user = users.find(u => u.id === decoded.id)
-    console.log('查找到的用户:', user)
 
-    if (!user) {
-      console.log('用户不存在')
+    // 查询用户信息
+    const [users] = await db.query('SELECT * FROM users WHERE id = ?', [decoded.id])
+    if (users.length === 0) {
       return res.json({
         success: false,
         message: '用户不存在'
       })
     }
 
-    // 验证请求数据
+    const user = users[0]
+    console.log('查找到的用户:', user)
+
     const { categoryId, categoryName, weight, address, appointmentDate, appointmentTime, remark } = req.body
-    console.log('订单数据验证:', { categoryId, categoryName, weight, address, appointmentDate, appointmentTime, remark })
+    console.log('订单数据验证:', req.body)
 
-    if (!categoryId || !categoryName || !weight || !address || !appointmentDate || !appointmentTime) {
-      console.log('订单数据不完整')
-      return res.json({
-        success: false,
-        message: '请填写完整信息'
-      })
-    }
+    // 计算预估金额
+    const estimatedAmount = calculateEstimatedAmount(categoryId, weight)
 
-    // 创建新订单
-    const order = {
-      id: orders.length + 1,
-      userId: user.id,
-      userName: user.name,
-      categoryId,
-      categoryName,
-      weight,
-      address,
-      appointmentDate,
-      appointmentTime,
-      remark: remark || '',
-      status: '待接单',
-      createTime: new Date().toISOString()
-    }
+    // 创建订单
+    const [result] = await db.query(
+      `INSERT INTO orders (
+        user_id, user_name, category_id, category_name, weight, 
+        address, appointment_date, appointment_time, remark, 
+        status, estimated_amount, create_time
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        user.id, user.name, categoryId, categoryName, weight,
+        address, appointmentDate, appointmentTime, remark,
+        '待接单', estimatedAmount
+      ]
+    )
 
-    orders.push(order)
-    console.log('新订单创建成功:', order)
+    const orderId = result.insertId
+    console.log('新订单创建成功，ID:', orderId)
 
     res.json({
       success: true,
-      message: '预约成功',
-      orderId: order.id
+      message: '订单创建成功',
+      orderId
     })
   } catch (err) {
     console.error('创建订单失败:', err)
     res.json({
       success: false,
-      message: err.message || 'token无效'
+      message: err.message || '创建订单失败'
     })
   }
 })
 
 // 获取用户订单列表
-app.get('/api/orders', (req, res) => {
+app.get('/orders', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -486,13 +616,36 @@ app.get('/api/orders', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    const userOrders = orders.filter(order => order.userId === decoded.id)
+    
+    // 从数据库中查询用户的订单
+    const [orders] = await db.query(
+      `SELECT 
+        id,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        create_time as createTime
+      FROM orders 
+      WHERE user_id = ?
+      ORDER BY create_time DESC`,
+      [decoded.id]
+    )
 
     res.json({
       success: true,
-      data: userOrders
+      data: orders.map(order => ({
+        ...order,
+        createTime: new Date(order.createTime).toLocaleString()
+      }))
     })
   } catch (err) {
+    console.error('获取订单列表失败:', err)
     res.json({
       success: false,
       message: 'token无效'
@@ -501,7 +654,7 @@ app.get('/api/orders', (req, res) => {
 })
 
 // 获取订单详情
-app.get('/api/orders/:id', (req, res) => {
+app.get('/orders/:id', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -512,27 +665,56 @@ app.get('/api/orders/:id', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    const order = orders.find(o => o.id === parseInt(req.params.id))
+    
+    // 从数据库中查询订单
+    const [orders] = await db.query(
+      `SELECT 
+        id,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        create_time as createTime,
+        collector_id as collectorId,
+        collector_name as collectorName,
+        collector_phone as collectorPhone,
+        actual_weight as actualWeight,
+        amount,
+        accept_time as acceptTime,
+        start_time as startTime,
+        complete_time as completeTime,
+        cancel_time as cancelTime
+      FROM orders 
+      WHERE id = ? AND user_id = ?`,
+      [req.params.id, decoded.id]
+    )
 
-    if (!order) {
+    if (orders.length === 0) {
       return res.json({
         success: false,
         message: '订单不存在'
       })
     }
 
-    if (order.userId !== decoded.id) {
-      return res.json({
-        success: false,
-        message: '无权访问此订单'
-      })
-    }
+    const order = orders[0]
+    // 格式化时间
+    order.createTime = new Date(order.createTime).toLocaleString()
+    if (order.acceptTime) order.acceptTime = new Date(order.acceptTime).toLocaleString()
+    if (order.startTime) order.startTime = new Date(order.startTime).toLocaleString()
+    if (order.completeTime) order.completeTime = new Date(order.completeTime).toLocaleString()
+    if (order.cancelTime) order.cancelTime = new Date(order.cancelTime).toLocaleString()
 
     res.json({
       success: true,
       data: order
     })
   } catch (err) {
+    console.error('获取订单详情失败:', err)
     res.json({
       success: false,
       message: 'token无效'
@@ -541,7 +723,7 @@ app.get('/api/orders/:id', (req, res) => {
 })
 
 // 取消订单
-app.post('/api/orders/:id/cancel', (req, res) => {
+app.post('/orders/:id/cancel', async (req, res) => {
   console.log('收到取消订单请求:', req.params.id)
   const token = req.headers.authorization?.split(' ')[1]
   
@@ -554,16 +736,20 @@ app.post('/api/orders/:id/cancel', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    const order = orders.find(o => o.id === parseInt(req.params.id))
-
-    if (!order) {
+    
+    // 从数据库中查询订单
+    const [orders] = await db.query('SELECT * FROM orders WHERE id = ?', [req.params.id])
+    
+    if (orders.length === 0) {
       return res.json({
         success: false,
         message: '订单不存在'
       })
     }
 
-    if (order.userId !== decoded.id) {
+    const order = orders[0]
+    
+    if (order.user_id !== decoded.id) {
       return res.json({
         success: false,
         message: '无权操作此订单'
@@ -578,8 +764,10 @@ app.post('/api/orders/:id/cancel', (req, res) => {
     }
 
     // 更新订单状态
-    order.status = '已取消'
-    order.cancelTime = new Date().toISOString()
+    await db.query(
+      'UPDATE orders SET status = ?, cancel_time = NOW() WHERE id = ?',
+      ['已取消', req.params.id]
+    )
 
     console.log('订单取消成功:', order)
 
@@ -597,7 +785,7 @@ app.post('/api/orders/:id/cancel', (req, res) => {
 })
 
 // 获取回收人员的订单列表
-app.get('/api/collector/orders', (req, res) => {
+app.get('/collector/orders', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -608,19 +796,55 @@ app.get('/api/collector/orders', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    if (!decoded.isCollector) {
+    
+    // 验证回收人员身份
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE id = ?', [decoded.id])
+    if (collectors.length === 0) {
       return res.json({
         success: false,
         message: '无权限访问'
       })
     }
 
-    const collectorOrders = orders.filter(order => order.collectorId === decoded.id)
+    // 从数据库中查询回收人员的订单
+    const [orders] = await db.query(`
+      SELECT 
+        id,
+        user_id as userId,
+        user_name as userName,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        actual_weight as actualWeight,
+        amount,
+        create_time as createTime,
+        accept_time as acceptTime,
+        start_time as startTime,
+        complete_time as completeTime
+      FROM orders 
+      WHERE collector_id = ?
+      ORDER BY create_time DESC`,
+      [decoded.id]
+    )
+
     res.json({
       success: true,
-      data: collectorOrders
+      data: orders.map(order => ({
+        ...order,
+        createTime: new Date(order.createTime).toLocaleString(),
+        acceptTime: order.acceptTime ? new Date(order.acceptTime).toLocaleString() : null,
+        startTime: order.startTime ? new Date(order.startTime).toLocaleString() : null,
+        completeTime: order.completeTime ? new Date(order.completeTime).toLocaleString() : null
+      }))
     })
   } catch (err) {
+    console.error('获取回收人员订单列表失败:', err)
     res.json({
       success: false,
       message: 'token无效'
@@ -629,7 +853,7 @@ app.get('/api/collector/orders', (req, res) => {
 })
 
 // 获取订单详情（回收人员版本）
-app.get('/api/collector/orders/:id', (req, res) => {
+app.get('/collector/orders/:id', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -640,26 +864,65 @@ app.get('/api/collector/orders/:id', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    if (!decoded.isCollector) {
+    
+    // 验证回收人员身份
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE id = ?', [decoded.id])
+    if (collectors.length === 0) {
       return res.json({
         success: false,
         message: '无权限访问'
       })
     }
 
-    const order = orders.find(o => o.id === parseInt(req.params.id))
-    if (!order) {
+    // 从数据库中查询订单
+    const [orders] = await db.query(`
+      SELECT 
+        id,
+        user_id as userId,
+        user_name as userName,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        create_time as createTime,
+        collector_id as collectorId,
+        collector_name as collectorName,
+        collector_phone as collectorPhone,
+        actual_weight as actualWeight,
+        amount,
+        accept_time as acceptTime,
+        start_time as startTime,
+        complete_time as completeTime
+      FROM orders 
+      WHERE id = ? AND collector_id = ?`,
+      [req.params.id, decoded.id]
+    )
+
+    if (orders.length === 0) {
       return res.json({
         success: false,
         message: '订单不存在'
       })
     }
 
+    const order = orders[0]
+    // 格式化时间
+    order.createTime = new Date(order.createTime).toLocaleString()
+    if (order.acceptTime) order.acceptTime = new Date(order.acceptTime).toLocaleString()
+    if (order.startTime) order.startTime = new Date(order.startTime).toLocaleString()
+    if (order.completeTime) order.completeTime = new Date(order.completeTime).toLocaleString()
+
     res.json({
       success: true,
       data: order
     })
   } catch (err) {
+    console.error('获取回收人员订单详情失败:', err)
     res.json({
       success: false,
       message: 'token无效'
@@ -668,7 +931,7 @@ app.get('/api/collector/orders/:id', (req, res) => {
 })
 
 // 开始上门服务
-app.post('/api/collector/orders/:id/start', (req, res) => {
+app.post('/collector/orders/:id/start', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -679,21 +942,26 @@ app.post('/api/collector/orders/:id/start', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    if (!decoded.isCollector) {
+    
+    // 验证回收人员身份
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE id = ?', [decoded.id])
+    if (collectors.length === 0) {
       return res.json({
         success: false,
         message: '无权限访问'
       })
     }
 
-    const order = orders.find(o => o.id === parseInt(req.params.id))
-    if (!order) {
+    // 从数据库中查询订单
+    const [orders] = await db.query('SELECT * FROM orders WHERE id = ? AND collector_id = ?', [req.params.id, decoded.id])
+    if (orders.length === 0) {
       return res.json({
         success: false,
         message: '订单不存在'
       })
     }
 
+    const order = orders[0]
     if (order.status !== '待上门') {
       return res.json({
         success: false,
@@ -701,15 +969,45 @@ app.post('/api/collector/orders/:id/start', (req, res) => {
       })
     }
 
-    order.status = '服务中'
-    order.startTime = new Date().toISOString()
+    // 更新订单状态
+    await db.query(
+      'UPDATE orders SET status = ?, start_time = NOW() WHERE id = ?',
+      ['服务中', req.params.id]
+    )
+
+    // 获取更新后的订单信息
+    const [updatedOrders] = await db.query(`
+      SELECT 
+        id,
+        user_id as userId,
+        user_name as userName,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        create_time as createTime,
+        start_time as startTime
+      FROM orders 
+      WHERE id = ?`,
+      [req.params.id]
+    )
 
     res.json({
       success: true,
       message: '已开始上门服务',
-      data: order
+      data: {
+        ...updatedOrders[0],
+        createTime: new Date(updatedOrders[0].createTime).toLocaleString(),
+        startTime: updatedOrders[0].startTime ? new Date(updatedOrders[0].startTime).toLocaleString() : null
+      }
     })
   } catch (err) {
+    console.error('开始上门服务失败:', err)
     res.json({
       success: false,
       message: 'token无效'
@@ -718,7 +1016,7 @@ app.post('/api/collector/orders/:id/start', (req, res) => {
 })
 
 // 完成订单
-app.post('/api/collector/orders/:id/complete', (req, res) => {
+app.post('/collector/orders/:id/complete', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]
   if (!token) {
     return res.json({
@@ -729,7 +1027,10 @@ app.post('/api/collector/orders/:id/complete', (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET)
-    if (!decoded.isCollector) {
+    
+    // 验证回收人员身份
+    const [collectors] = await db.query('SELECT * FROM collectors WHERE id = ?', [decoded.id])
+    if (collectors.length === 0) {
       return res.json({
         success: false,
         message: '无权限访问'
@@ -744,14 +1045,16 @@ app.post('/api/collector/orders/:id/complete', (req, res) => {
       })
     }
 
-    const order = orders.find(o => o.id === parseInt(req.params.id))
-    if (!order) {
+    // 从数据库中查询订单
+    const [orders] = await db.query('SELECT * FROM orders WHERE id = ? AND collector_id = ?', [req.params.id, decoded.id])
+    if (orders.length === 0) {
       return res.json({
         success: false,
         message: '订单不存在'
       })
     }
 
+    const order = orders[0]
     if (order.status !== '服务中') {
       return res.json({
         success: false,
@@ -759,26 +1062,275 @@ app.post('/api/collector/orders/:id/complete', (req, res) => {
       })
     }
 
-    // 更新订单信息
-    order.status = '已完成'
-    order.actualWeight = actualWeight
-    order.amount = amount
-    order.completeTime = new Date().toISOString()
+    // 更新订单完成时间
+    await db.query(
+      'UPDATE orders SET status = ?, actual_weight = ?, amount = ?, complete_time = NOW() WHERE id = ?',
+      ['已完成', actualWeight, amount, req.params.id]
+    )
 
     // 更新回收人员信息
-    const collector = collectors.find(c => c.id === decoded.id)
-    collector.orderCount += 1
-    collector.totalIncome += amount
+    await db.query(
+      'UPDATE collectors SET order_count = order_count + 1, total_income = total_income + ? WHERE id = ?',
+      [amount, decoded.id]
+    )
+
+    // 获取更新后的订单信息
+    const [updatedOrders] = await db.query(`
+      SELECT 
+        id,
+        user_id as userId,
+        user_name as userName,
+        category_id as categoryId,
+        category_name as categoryName,
+        weight,
+        address,
+        appointment_date as appointmentDate,
+        appointment_time as appointmentTime,
+        remark,
+        status,
+        estimated_amount as estimatedAmount,
+        actual_weight as actualWeight,
+        amount,
+        create_time as createTime,
+        complete_time as completeTime
+      FROM orders 
+      WHERE id = ?`,
+      [req.params.id]
+    )
 
     res.json({
       success: true,
       message: '订单已完成',
-      data: order
+      data: {
+        ...updatedOrders[0],
+        createTime: new Date(updatedOrders[0].createTime).toLocaleString(),
+        completeTime: updatedOrders[0].completeTime ? new Date(updatedOrders[0].completeTime).toLocaleString() : null
+      }
     })
   } catch (err) {
+    console.error('完成订单失败:', err)
     res.json({
       success: false,
       message: 'token无效'
+    })
+  }
+})
+
+// 管理员数据概览
+app.get('/admin/overview', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) {
+    return res.json({
+      success: false,
+      message: '请先登录'
+    })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (!decoded.isAdmin) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+    
+    // 验证管理员身份
+    const [admins] = await db.query('SELECT * FROM users WHERE id = ? AND phone = ?', [decoded.id, 'admin'])
+    if (admins.length === 0) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+
+    // 获取统计数据
+    const [stats] = await db.query(`
+      SELECT 
+        COUNT(*) as totalOrders,
+        COUNT(DISTINCT user_id) as totalUsers,
+        COUNT(DISTINCT collector_id) as totalCollectors,
+        COALESCE(SUM(amount), 0) as totalIncome
+      FROM orders
+    `)
+
+    res.json({
+      success: true,
+      data: stats[0]
+    })
+  } catch (err) {
+    console.error('获取管理员概览数据失败:', err)
+    res.json({
+      success: false,
+      message: '获取数据失败'
+    })
+  }
+})
+
+// 管理员今日数据
+app.get('/admin/today', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) {
+    return res.json({
+      success: false,
+      message: '请先登录'
+    })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (!decoded.isAdmin) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+    
+    // 验证管理员身份
+    const [admins] = await db.query('SELECT * FROM users WHERE id = ? AND phone = ?', [decoded.id, 'admin'])
+    if (admins.length === 0) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+
+    // 获取今日数据
+    const today = new Date().toISOString().split('T')[0]
+    const [stats] = await db.query(`
+      SELECT 
+        COUNT(*) as orderCount,
+        COALESCE(SUM(amount), 0) as income,
+        COUNT(DISTINCT user_id) as newUsers
+      FROM orders
+      WHERE DATE(create_time) = ?
+    `, [today])
+
+    res.json({
+      success: true,
+      data: stats[0]
+    })
+  } catch (err) {
+    console.error('获取管理员今日数据失败:', err)
+    res.json({
+      success: false,
+      message: '获取数据失败'
+    })
+  }
+})
+
+// 管理员最近订单
+app.get('/admin/recent-orders', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) {
+    return res.json({
+      success: false,
+      message: '请先登录'
+    })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (!decoded.isAdmin) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+    
+    // 验证管理员身份
+    const [admins] = await db.query('SELECT * FROM users WHERE id = ? AND phone = ?', [decoded.id, 'admin'])
+    if (admins.length === 0) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+
+    // 获取最近订单
+    const [orders] = await db.query(`
+      SELECT 
+        o.id,
+        o.status,
+        o.create_time as createTime,
+        o.amount,
+        u.name as userName,
+        c.name as collectorName
+      FROM orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      LEFT JOIN collectors c ON o.collector_id = c.id
+      ORDER BY o.create_time DESC
+      LIMIT 10
+    `)
+
+    res.json({
+      success: true,
+      data: orders.map(order => ({
+        ...order,
+        createTime: new Date(order.createTime).toLocaleString()
+      }))
+    })
+  } catch (err) {
+    console.error('获取管理员最近订单失败:', err)
+    res.json({
+      success: false,
+      message: '获取数据失败'
+    })
+  }
+})
+
+// 管理员最近用户
+app.get('/admin/recent-users', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) {
+    return res.json({
+      success: false,
+      message: '请先登录'
+    })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    if (!decoded.isAdmin) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+    
+    // 验证管理员身份
+    const [admins] = await db.query('SELECT * FROM users WHERE id = ? AND phone = ?', [decoded.id, 'admin'])
+    if (admins.length === 0) {
+      return res.json({
+        success: false,
+        message: '无权限访问'
+      })
+    }
+
+    // 获取最近用户
+    const [users] = await db.query(`
+      SELECT 
+        id,
+        phone,
+        name,
+        create_time as createTime
+      FROM users
+      ORDER BY create_time DESC
+      LIMIT 10
+    `)
+
+    res.json({
+      success: true,
+      data: users.map(user => ({
+        ...user,
+        createTime: new Date(user.createTime).toLocaleString()
+      }))
+    })
+  } catch (err) {
+    console.error('获取管理员最近用户失败:', err)
+    res.json({
+      success: false,
+      message: '获取数据失败'
     })
   }
 })
@@ -787,21 +1339,25 @@ app.post('/api/collector/orders/:id/complete', (req, res) => {
 app.listen(port, '0.0.0.0', () => {
   console.log(`服务器运行在 http://localhost:${port}`)
   console.log('支持的路由:')
-  console.log('- POST /api/user/register (用户注册)')
-  console.log('- POST /api/user/login (用户登录)')
-  console.log('- GET /api/user/check-token (验证用户token)')
-  console.log('- POST /api/admin/login (管理员登录)')
-  console.log('- GET /api/admin/check-token (验证管理员token)')
-  console.log('- POST /api/orders (创建订单)')
-  console.log('- GET /api/orders (获取用户订单列表)')
-  console.log('- GET /api/orders/:id (获取订单详情)')
-  console.log('- POST /api/orders/:id/cancel (取消订单)')
-  console.log('- POST /api/collector/login (回收人员登录)')
-  console.log('- GET /api/collector/check-token (验证回收人员token)')
-  console.log('- GET /api/collector/orders/pending (获取待接单列表)')
-  console.log('- POST /api/collector/orders/:id/accept (接单)')
-  console.log('- GET /api/collector/orders (获取回收人员订单列表)')
-  console.log('- GET /api/collector/orders/:id (获取回收人员订单详情)')
-  console.log('- POST /api/collector/orders/:id/start (开始上门服务)')
-  console.log('- POST /api/collector/orders/:id/complete (完成订单)')
+  console.log('- POST /user/register (用户注册)')
+  console.log('- POST /user/login (用户登录)')
+  console.log('- GET /user/check-token (验证用户token)')
+  console.log('- POST /admin/login (管理员登录)')
+  console.log('- GET /admin/check-token (验证管理员token)')
+  console.log('- POST /orders (创建订单)')
+  console.log('- GET /orders (获取用户订单列表)')
+  console.log('- GET /orders/:id (获取订单详情)')
+  console.log('- POST /orders/:id/cancel (取消订单)')
+  console.log('- POST /collector/login (回收人员登录)')
+  console.log('- GET /collector/check-token (验证回收人员token)')
+  console.log('- GET /collector/orders/pending (获取待接单列表)')
+  console.log('- POST /collector/orders/:id/accept (接单)')
+  console.log('- GET /collector/orders (获取回收人员订单列表)')
+  console.log('- GET /collector/orders/:id (获取回收人员订单详情)')
+  console.log('- POST /collector/orders/:id/start (开始上门服务)')
+  console.log('- POST /collector/orders/:id/complete (完成订单)')
+  console.log('- GET /admin/overview (管理员数据概览)')
+  console.log('- GET /admin/today (管理员今日数据)')
+  console.log('- GET /admin/recent-orders (管理员最近订单)')
+  console.log('- GET /admin/recent-users (管理员最近用户)')
 }) 

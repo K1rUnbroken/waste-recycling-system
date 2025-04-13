@@ -1,7 +1,7 @@
 App({
   // 初始化全局数据
   globalData: {
-    baseUrl: 'http://localhost:3000/api',
+    baseUrl: 'http://localhost:3000',
     userInfo: null,
     isAdmin: false,
     isLoggedIn: false
