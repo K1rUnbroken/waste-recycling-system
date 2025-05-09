@@ -10,6 +10,7 @@
     "pages/admin/login/login",
     "pages/admin/index/index",
     "pages/collector/index/index",
+    "pages/collector/login/login",
     "pages/collector/orderDetail/orderDetail"
   ],
   "window": {

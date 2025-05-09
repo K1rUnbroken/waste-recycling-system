@@ -68,7 +68,10 @@ Page({
         if (res.data.success) {
           // 保存登录信息
           wx.setStorageSync('token', res.data.token)
-          wx.setStorageSync('userInfo', res.data.collectorInfo)
+          
+          // 保存回收员信息
+          const collectorInfo = res.data.collectorInfo;
+          wx.setStorageSync('userInfo', collectorInfo)
           wx.setStorageSync('userType', 'collector')
 
           wx.showToast({
@@ -78,7 +81,7 @@ Page({
 
           // 跳转到回收人员首页
           setTimeout(() => {
-            wx.redirectTo({
+            wx.reLaunch({
               url: '/pages/collector/index/index'
             })
           }, 1500)

@@ -31,12 +31,32 @@
         <text class="value">{{order.address}}</text>
       </view>
       <view class="info-item">
+        <text class="label">联系方式</text>
+        <text class="value">{{order.userContact}}</text>
+      </view>
+      <view class="info-item">
         <text class="label">预约时间</text>
         <text class="value">{{order.appointmentDate}} {{order.appointmentTime}}</text>
       </view>
       <view class="info-item" wx:if="{{order.remark}}">
         <text class="label">备注信息</text>
         <text class="value">{{order.remark}}</text>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{order.status === '已接单' || order.status === '待上门' || order.status === '服务中' || order.status === '已完成'}}">
+      <view class="section-title">回收员信息</view>
+      <view class="info-item">
+        <text class="label">回收员</text>
+        <text class="value">{{order.collectorName}}</text>
+      </view>
+      <view class="info-item">
+        <text class="label">联系电话</text>
+        <text class="value">{{order.collectorPhone}}</text>
+      </view>
+      <view class="info-item" wx:if="{{order.acceptTime}}">
+        <text class="label">接单时间</text>
+        <text class="value">{{order.acceptTime}}</text>
       </view>
     </view>
 

@@ -9,6 +9,7 @@ Page({
     selectedCategory: null,
     weight: '',
     address: '',
+    contact: '',
     appointmentDate: '',
     appointmentTime: '',
     remark: ''
@@ -40,13 +41,14 @@ Page({
 
   // 输入重量
   inputWeight(e) {
+    console.log('输入重量:', e.detail.value)
     this.setData({
       weight: e.detail.value
     })
   },
 
   // 输入地址
-  inputAddress(e) {
+  onAddressInput(e) {
     this.setData({
       address: e.detail.value
     })
@@ -75,120 +77,15 @@ Page({
     })
   },
 
+  // 输入联系方式
+  onContactInput(e) {
+    this.setData({
+      contact: e.detail.value
+    })
+  },
+
   // 提交预约
   submitOrder() {
-    const { selectedCategory, weight, address, appointmentDate, appointmentTime } = this.data
-
-    // 验证必填字段
-    if (!selectedCategory) {
-      wx.showToast({
-        title: '请选择回收类别',
-        icon: 'none'
-      })
-      return
-    }
-
-    if (!weight) {
-      wx.showToast({
-        title: '请输入预估重量',
-        icon: 'none'
-      })
-      return
-    }
-
-    if (!address) {
-      wx.showToast({
-        title: '请输入回收地址',
-        icon: 'none'
-      })
-      return
-    }
-
-    if (!appointmentDate || !appointmentTime) {
-      wx.showToast({
-        title: '请选择预约时间',
-        icon: 'none'
-      })
-      return
-    }
-
-    const token = wx.getStorageSync('token')
-    if (!token) {
-      wx.showToast({
-        title: '请先登录',
-        icon: 'none'
-      })
-      setTimeout(() => {
-        wx.navigateTo({
-          url: '/pages/user/login/login'
-        })
-      }, 1500)
-      return
-    }
-
-    console.log('提交订单，当前token:', token) // 添加调试日志
-
-    const app = getApp()
-    wx.request({
-      url: `${app.globalData.baseUrl}/orders`,
-      method: 'POST',
-      header: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      data: {
-        categoryId: selectedCategory.id,
-        categoryName: selectedCategory.name,
-        weight: parseFloat(weight),
-        address: address,
-        appointmentDate: appointmentDate,
-        appointmentTime: appointmentTime,
-        remark: this.data.remark || ''
-      },
-      success: (res) => {
-        console.log('服务器响应:', res.data) // 添加调试日志
-        if (res.data.success) {
-          wx.showToast({
-            title: '预约成功',
-            icon: 'success'
-          })
-          // 清空表单
-          this.setData({
-            selectedCategory: null,
-            weight: '',
-            address: '',
-            appointmentDate: this.data.appointmentDate,
-            appointmentTime: this.data.appointmentTime,
-            remark: ''
-          })
-          // 跳转到订单列表页
-          setTimeout(() => {
-            wx.navigateTo({
-              url: '/pages/user/order/order'
-            })
-          }, 1500)
-        } else {
-          wx.showToast({
-            title: res.data.message || '预约失败',
-            icon: 'none'
-          })
-          // 如果是token无效，跳转到登录页
-          if (res.data.message === 'token无效' || res.data.message === '请先登录') {
-            setTimeout(() => {
-              wx.navigateTo({
-                url: '/pages/user/login/login'
-              })
-            }, 1500)
-          }
-        }
-      },
-      fail: (err) => {
-        console.error('请求失败:', err) // 添加调试日志
-        wx.showToast({
-          title: '网络错误，请重试',
-          icon: 'none'
-        })
-      }
-    })
+    // 此处实现提交预约的逻辑
   }
 }) 

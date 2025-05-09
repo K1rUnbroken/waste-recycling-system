@@ -31,6 +31,10 @@
           <text class="value">{{item.address}}</text>
         </view>
         <view class="order-info">
+          <text class="label">联系方式：</text>
+          <text class="value">{{item.userContact}}</text>
+        </view>
+        <view class="order-info">
           <text class="label">预约时间：</text>
           <text class="value">{{item.appointmentDate}} {{item.appointmentTime}}</text>
         </view>

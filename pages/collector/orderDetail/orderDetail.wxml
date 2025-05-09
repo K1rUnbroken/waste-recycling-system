@@ -72,6 +72,10 @@
         <text class="value">{{order.userName}}</text>
       </view>
       <view class="info-item">
+        <text class="label">联系方式</text>
+        <text class="value">{{order.userContact}}</text>
+      </view>
+      <view class="info-item">
         <text class="label">回收地址</text>
         <text class="value">{{order.address}}</text>
       </view>

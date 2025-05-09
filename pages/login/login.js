@@ -182,14 +182,18 @@ Page({
                     if (loginType === 'user') {
                         wx.setStorageSync('token', res.data.token)
                         wx.setStorageSync('userInfo', res.data.userInfo)
+                        wx.setStorageSync('userType', 'user')
                         console.log('[登录页] 保存用户token和信息:', res.data.userInfo)
                     } else if (loginType === 'collector') {
                         wx.setStorageSync('token', res.data.token)
-                        wx.setStorageSync('collectorInfo', res.data.collectorInfo)
+                        wx.setStorageSync('userInfo', res.data.collectorInfo)
+                        wx.setStorageSync('userType', 'collector')
                         console.log('[登录页] 保存回收员token和信息:', res.data.collectorInfo)
+                        console.log('[登录页] userType已设置为:', wx.getStorageSync('userType'))
                     } else {
                         wx.setStorageSync('adminToken', res.data.token)
                         wx.setStorageSync('adminInfo', res.data.adminInfo)
+                        wx.setStorageSync('userType', 'admin')
                         console.log('[登录页] 保存管理员token和信息:', res.data.adminInfo)
                     }
 
@@ -360,7 +364,7 @@ Page({
     },
 
     // 切换到管理员登录
-    switchToAdminLogin() {
+    switchToAdmin() {
         wx.navigateTo({
             url: '/pages/admin/login/login'
         })
@@ -392,6 +396,13 @@ Page({
     // 切换密码显示
     togglePassword() {
         console.log('切换密码显示状态')
+        this.setData({
+            showPassword: !this.data.showPassword
+        })
+    },
+
+    // 切换密码显示状态
+    togglePasswordVisible() {
         this.setData({
             showPassword: !this.data.showPassword
         })

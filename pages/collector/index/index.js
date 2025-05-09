@@ -13,14 +13,25 @@ Page({
   onLoad() {
     // 获取回收人员信息
     const collectorInfo = wx.getStorageSync('userInfo')
-    this.setData({ collectorInfo })
+    
+    // 调用数据修复函数
+    const fixedInfo = this.ensureValidInfo(collectorInfo)
+    this.setData({ collectorInfo: fixedInfo })
     
     // 加载订单列表
     this.loadOrders()
+
+    // 检查登录状态
+    this.checkLoginStatus()
   },
 
   onShow() {
-    this.checkLoginStatus()
+    // 页面显示时再次检查数据
+    const collectorInfo = wx.getStorageSync('userInfo')
+    if (collectorInfo) {
+      const fixedInfo = this.ensureValidInfo(collectorInfo)
+      this.setData({ collectorInfo: fixedInfo })
+    }
   },
 
   onPullDownRefresh() {
@@ -33,9 +44,22 @@ Page({
     const userType = wx.getStorageSync('userType')
 
     if (!token || userType !== 'collector') {
-      wx.redirectTo({
-        url: '/pages/collector/login/login'
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none'
       })
+      
+      setTimeout(() => {
+        wx.reLaunch({
+          url: '/pages/collector/login/login',
+          fail: (err) => {
+            // 尝试使用另一种路径格式
+            wx.reLaunch({
+              url: '../login/login'
+            })
+          }
+        })
+      }, 1000)
       return
     }
 
@@ -46,6 +70,7 @@ Page({
         'Authorization': `Bearer ${token}`
       },
       success: (res) => {
+        console.log('token验证结果:', res.data)
         if (!res.data.success) {
           wx.removeStorageSync('token')
           wx.removeStorageSync('userInfo')
@@ -54,8 +79,16 @@ Page({
             url: '/pages/collector/login/login'
           })
         } else {
+          console.log('验证成功后获取的回收员信息:', res.data.collectorInfo)
+          // 使用数据修复函数确保数据完整
+          const fixedInfo = this.ensureValidInfo(res.data.collectorInfo)
+          
+          // 更新本地存储
+          wx.setStorageSync('userInfo', fixedInfo)
+          
+          // 更新页面数据
           this.setData({
-            collectorInfo: res.data.collectorInfo
+            collectorInfo: fixedInfo
           })
         }
       }
@@ -151,5 +184,33 @@ Page({
     wx.navigateTo({
       url: `/pages/collector/orderDetail/orderDetail?id=${id}`
     })
+  },
+
+  // 确保回收员信息的完整性
+  ensureValidInfo(info) {
+    if (!info) return {}
+    
+    // 创建一个新对象以避免修改原对象
+    const fixedInfo = { ...info }
+    
+    // 确保totalIncome存在且为数字
+    if (typeof fixedInfo.totalIncome !== 'number' || isNaN(fixedInfo.totalIncome)) {
+      console.log('总收益无效，设置为默认值0')
+      fixedInfo.totalIncome = 0
+    }
+    
+    // 确保orderCount存在且为数字
+    if (typeof fixedInfo.orderCount !== 'number' || isNaN(fixedInfo.orderCount)) {
+      console.log('总订单数无效，设置为默认值0')
+      fixedInfo.orderCount = 0
+    }
+    
+    // 确保rating存在且为数字
+    if (typeof fixedInfo.rating !== 'number' || isNaN(fixedInfo.rating)) {
+      fixedInfo.rating = 5.0
+    }
+    
+    console.log('修复后的回收员信息:', fixedInfo)
+    return fixedInfo
   }
 }) 

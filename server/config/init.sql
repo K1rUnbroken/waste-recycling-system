@@ -69,7 +69,7 @@ ON DUPLICATE KEY UPDATE id=id;
 
 -- 插入默认用户
 INSERT INTO users (phone, name, password, create_time) 
-VALUES ('admin', 'admin', 'admin123', NOW())
+VALUES ('13900139000', '测试用户', '123456', NOW())
 ON DUPLICATE KEY UPDATE id=id;
 
 -- 插入默认回收员

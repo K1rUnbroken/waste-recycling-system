@@ -102,4 +102,22 @@
 .register-link text {
   font-size: 26rpx;
   color: #07c160;
+}
+
+/* 其他链接 */
+.links {
+  margin-top: 30rpx;
+  text-align: center;
+  color: #07c160;
+  font-size: 28rpx;
+}
+
+/* 版本信息 */
+.version {
+  position: fixed;
+  bottom: 60rpx;
+  width: 100%;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
 } 

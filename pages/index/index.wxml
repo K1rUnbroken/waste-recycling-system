@@ -32,10 +32,16 @@
              bindinput="inputWeight"/>
     </view>
     <view class="form-item">
-      <text>回收地址</text>
-      <textarea value="{{address}}"
-                placeholder="请输入详细地址" 
-                bindinput="inputAddress"/>
+      <text class="label">回收地址</text>
+      <input class="input" 
+             type="text" 
+             placeholder="请输入回收地址" 
+             bindinput="onAddressInput" 
+             value="{{address}}" />
+    </view>
+    <view class="form-item">
+      <text class="label">联系方式</text>
+      <input class="input" type="text" placeholder="请输入联系方式" bindinput="onContactInput" value="{{contact}}" />
     </view>
     <view class="form-item">
       <text>预约日期</text>
@@ -66,4 +72,7 @@
 
   <!-- 提交按钮 -->
   <button class="submit-btn" bindtap="submitOrder">提交预约</button>
+
+  <!-- 版本信息 -->
+  <view class="version">v1.0.0</view>
 </view> 

@@ -90,4 +90,7 @@
   <view class="register-link" wx:if="{{loginType === 'user'}}">
     <text bindtap="toggleRegister">{{isRegister ? '已有账号？立即登录' : '还没有账号？立即注册'}}</text>
   </view>
+
+  <!-- 版本信息 -->
+  <view class="version">v1.0.0</view>
 </view>
