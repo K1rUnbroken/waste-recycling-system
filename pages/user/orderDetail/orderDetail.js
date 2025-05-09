@@ -4,7 +4,12 @@ Page({
   data: {
     orderId: null,
     order: null,
-    loading: true
+    loading: true,
+    // 添加评价相关数据
+    ratings: null,
+    showRatingModal: false,
+    ratingValue: 5,
+    ratingComment: ''
   },
 
   onLoad(options) {
@@ -48,6 +53,11 @@ Page({
           this.setData({
             order: order
           })
+          
+          // 如果订单已完成，加载评价信息
+          if (order.status === '已完成') {
+            this.loadRatings()
+          }
         } else {
           wx.showToast({
             title: res.data.message,
@@ -63,6 +73,25 @@ Page({
       },
       complete: () => {
         this.setData({ loading: false })
+      }
+    })
+  },
+
+  // 加载评价信息
+  loadRatings() {
+    const token = wx.getStorageSync('token')
+    wx.request({
+      url: `${app.globalData.baseUrl}/orders/${this.data.orderId}/ratings`,
+      method: 'GET',
+      header: {
+        'Authorization': `Bearer ${token}`
+      },
+      success: (res) => {
+        if (res.data.success) {
+          this.setData({
+            ratings: res.data.data
+          })
+        }
       }
     })
   },
@@ -104,6 +133,86 @@ Page({
             }
           })
         }
+      }
+    })
+  },
+
+  // 显示评价弹窗
+  showRatingModal() {
+    this.setData({
+      showRatingModal: true,
+      ratingValue: 5,
+      ratingComment: ''
+    })
+  },
+
+  // 隐藏评价弹窗
+  hideRatingModal() {
+    this.setData({
+      showRatingModal: false
+    })
+  },
+
+  // 设置评分值
+  setRating(e) {
+    const value = e.currentTarget.dataset.value
+    this.setData({
+      ratingValue: value
+    })
+  },
+
+  // 输入评价内容
+  inputComment(e) {
+    this.setData({
+      ratingComment: e.detail.value
+    })
+  },
+
+  // 提交评价
+  submitRating() {
+    const { ratingValue, ratingComment } = this.data
+    
+    if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
+      wx.showToast({
+        title: '请选择评分',
+        icon: 'none'
+      })
+      return
+    }
+
+    const token = wx.getStorageSync('token')
+    wx.request({
+      url: `${app.globalData.baseUrl}/orders/${this.data.orderId}/rate-collector`,
+      method: 'POST',
+      header: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      data: {
+        rating: ratingValue,
+        comment: ratingComment
+      },
+      success: (res) => {
+        if (res.data.success) {
+          this.hideRatingModal()
+          wx.showToast({
+            title: '评价成功',
+            icon: 'success'
+          })
+          // 重新加载评价信息
+          this.loadRatings()
+        } else {
+          wx.showToast({
+            title: res.data.message,
+            icon: 'none'
+          })
+        }
+      },
+      fail: () => {
+        wx.showToast({
+          title: '操作失败',
+          icon: 'none'
+        })
       }
     })
   },

@@ -98,6 +98,46 @@
         <button class="btn primary" bindtap="showCompleteModal">完成订单</button>
       </block>
     </view>
+
+    <!-- 添加评价按钮 -->
+    <button wx:if="{{order.status === '已完成' && !ratings.collectorRating.rated}}" class="btn primary" bindtap="showRatingModal">评价用户</button>
+  </view>
+
+  <!-- 评价信息展示区域 -->
+  <view class="section" wx:if="{{order.status === '已完成' && ratings}}">
+    <view class="section-title">评价信息</view>
+    
+    <!-- 回收员对用户的评价 -->
+    <view class="rating-info" wx:if="{{ratings.collectorRating.rated}}">
+      <view class="info-item">
+        <text class="label">我的评分</text>
+        <view class="stars">
+          <block wx:for="{{5}}" wx:key="index">
+            <image class="star" src="/images/{{index < ratings.collectorRating.rating ? 'star-active.png' : 'star.png'}}"></image>
+          </block>
+        </view>
+      </view>
+      <view class="info-item" wx:if="{{ratings.collectorRating.comment}}">
+        <text class="label">我的评价</text>
+        <text class="value comment">{{ratings.collectorRating.comment}}</text>
+      </view>
+    </view>
+    
+    <!-- 用户对回收员的评价 -->
+    <view class="rating-info" wx:if="{{ratings.userRating.rated}}">
+      <view class="info-item">
+        <text class="label">用户评分</text>
+        <view class="stars">
+          <block wx:for="{{5}}" wx:key="index">
+            <image class="star" src="/images/{{index < ratings.userRating.rating ? 'star-active.png' : 'star.png'}}"></image>
+          </block>
+        </view>
+      </view>
+      <view class="info-item" wx:if="{{ratings.userRating.comment}}">
+        <text class="label">用户评价</text>
+        <text class="value comment">{{ratings.userRating.comment}}</text>
+      </view>
+    </view>
   </view>
 
   <!-- 加载状态 -->
@@ -130,6 +170,27 @@
       <view class="modal-footer">
         <button class="btn" bindtap="hideCompleteModal">取消</button>
         <button class="btn primary" bindtap="completeOrder">确认</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 评价弹窗 -->
+  <view class="modal" wx:if="{{showRatingModal}}">
+    <view class="modal-mask" bindtap="hideRatingModal"></view>
+    <view class="modal-content">
+      <text class="modal-title">评价用户</text>
+      <view class="rating-stars">
+        <block wx:for="{{5}}" wx:key="index">
+          <image class="star-large" 
+                 src="/images/{{index < ratingValue ? 'star-active.png' : 'star.png'}}" 
+                 bindtap="setRating" 
+                 data-value="{{index+1}}"></image>
+        </block>
+      </view>
+      <textarea class="comment-input" placeholder="请输入您的评价（选填）" bindinput="inputRatingComment" value="{{ratingComment}}"></textarea>
+      <view class="modal-footer">
+        <button class="btn" bindtap="hideRatingModal">取消</button>
+        <button class="btn primary" bindtap="submitRating">提交评价</button>
       </view>
     </view>
   </view>

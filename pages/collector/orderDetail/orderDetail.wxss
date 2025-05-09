@@ -209,4 +209,213 @@
   display: flex;
   justify-content: flex-end;
   border-top: 1rpx solid #eee;
+}
+
+/* 订单详情页样式 */
+.container {
+  padding: 20rpx;
+}
+
+.order-detail {
+  background: #fff;
+  border-radius: 12rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.section {
+  padding: 30rpx;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  color: #333;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+  font-size: 28rpx;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.label {
+  color: #666;
+  flex: 0 0 160rpx;
+}
+
+.value {
+  color: #333;
+  flex: 1;
+  text-align: right;
+}
+
+.value.status {
+  font-weight: bold;
+}
+
+.value.status.pending {
+  color: #ff9800;
+}
+
+.btn-group {
+  padding: 30rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.btn {
+  min-width: 200rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  margin: 0 20rpx;
+  background: #f5f5f5;
+  color: #666;
+}
+
+.btn.primary {
+  background: #07c160;
+  color: #fff;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100rpx;
+  color: #999;
+}
+
+/* 弹窗样式 */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+}
+
+.modal-content {
+  width: 80%;
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 40rpx;
+  z-index: 1002;
+  position: relative;
+}
+
+.modal-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 40rpx;
+  display: block;
+}
+
+.modal-input {
+  width: 100%;
+  height: 80rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  margin-bottom: 20rpx;
+  box-sizing: border-box;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30rpx;
+}
+
+.modal-footer .btn {
+  flex: 1;
+  margin: 0 10rpx;
+}
+
+/* 评价相关样式 */
+.stars {
+  display: flex;
+  align-items: center;
+}
+
+.star {
+  width: 32rpx;
+  height: 32rpx;
+  margin-left: 8rpx;
+}
+
+.comment {
+  color: #666;
+  font-size: 26rpx;
+  text-align: left;
+  margin-top: 10rpx;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30rpx;
+}
+
+.star-large {
+  width: 60rpx;
+  height: 60rpx;
+  margin: 0 10rpx;
+}
+
+.comment-input {
+  width: 100%;
+  height: 200rpx;
+  border: 1rpx solid #ddd;
+  border-radius: 8rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  margin-bottom: 30rpx;
+  box-sizing: border-box;
+}
+
+.rating-info {
+  margin-bottom: 20rpx;
+  padding: 15rpx;
+  background: #f9f9f9;
+  border-radius: 8rpx;
+}
+
+.value.comment {
+  text-align: left;
+  margin-top: 10rpx;
+  padding: 10rpx;
+  background: #f5f5f5;
+  border-radius: 6rpx;
+  word-break: break-all;
 } 

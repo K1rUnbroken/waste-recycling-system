@@ -1390,6 +1390,288 @@ app.get('/admin/recent-users', async (req, res) => {
   }
 })
 
+// 用户对回收员评价
+app.post('/orders/:id/rate-collector', verifyToken, async (req, res) => {
+  const { rating, comment } = req.body
+  const orderId = req.params.id
+
+  if (!rating || rating < 1 || rating > 5) {
+    return res.json({
+      success: false,
+      message: '请提供有效的评分（1-5）'
+    })
+  }
+
+  try {
+    // 检查订单是否存在且属于当前用户
+    const [orders] = await db.query(
+      'SELECT * FROM orders WHERE id = ? AND user_id = ? AND status = ?',
+      [orderId, req.user.id, '已完成']
+    )
+
+    if (orders.length === 0) {
+      return res.json({
+        success: false,
+        message: '订单不存在或不是已完成状态'
+      })
+    }
+
+    const order = orders[0]
+
+    // 检查用户是否已经评价过
+    if (order.user_rated) {
+      return res.json({
+        success: false,
+        message: '您已经评价过该订单'
+      })
+    }
+
+    // 开始事务
+    const conn = await db.getConnection()
+    await conn.beginTransaction()
+
+    try {
+      // 更新订单评价信息
+      await conn.query(
+        'UPDATE orders SET user_rating = ?, user_comment = ?, user_rated = TRUE WHERE id = ?',
+        [rating, comment, orderId]
+      )
+
+      // 插入评价记录
+      await conn.query(
+        'INSERT INTO ratings (order_id, from_user_id, to_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)',
+        [orderId, req.user.id, order.collector_id, rating, comment]
+      )
+
+      // 更新回收员的平均评分
+      const [ratingResult] = await conn.query(
+        'SELECT AVG(user_rating) as avg_rating FROM orders WHERE collector_id = ? AND user_rated = TRUE',
+        [order.collector_id]
+      )
+      
+      const avgRating = parseFloat(ratingResult[0].avg_rating).toFixed(1)
+      
+      await conn.query(
+        'UPDATE collectors SET rating = ? WHERE id = ?',
+        [avgRating, order.collector_id]
+      )
+
+      await conn.commit()
+      
+      res.json({
+        success: true,
+        message: '评价成功',
+        data: {
+          rating,
+          comment
+        }
+      })
+    } catch (err) {
+      await conn.rollback()
+      throw err
+    } finally {
+      conn.release()
+    }
+  } catch (err) {
+    console.error('评价失败:', err)
+    res.json({
+      success: false,
+      message: '评价失败'
+    })
+  }
+})
+
+// 回收员对用户评价
+app.post('/collector/orders/:id/rate-user', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) {
+    return res.json({
+      success: false,
+      message: '请先登录'
+    })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    const { rating, comment } = req.body
+    const orderId = req.params.id
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.json({
+        success: false,
+        message: '请提供有效的评分（1-5）'
+      })
+    }
+
+    // 检查订单是否存在且属于当前回收员
+    const [orders] = await db.query(
+      'SELECT * FROM orders WHERE id = ? AND collector_id = ? AND status = ?',
+      [orderId, decoded.id, '已完成']
+    )
+
+    if (orders.length === 0) {
+      return res.json({
+        success: false,
+        message: '订单不存在或不是已完成状态'
+      })
+    }
+
+    const order = orders[0]
+
+    // 检查回收员是否已经评价过
+    if (order.collector_rated) {
+      return res.json({
+        success: false,
+        message: '您已经评价过该订单'
+      })
+    }
+
+    // 更新订单评价信息
+    await db.query(
+      'UPDATE orders SET collector_rating = ?, collector_comment = ?, collector_rated = TRUE WHERE id = ?',
+      [rating, comment, orderId]
+    )
+
+    // 插入评价记录
+    await db.query(
+      'INSERT INTO ratings (order_id, from_user_id, to_user_id, rating, comment) VALUES (?, ?, ?, ?, ?)',
+      [orderId, decoded.id, order.user_id, rating, comment]
+    )
+
+    res.json({
+      success: true,
+      message: '评价成功',
+      data: {
+        rating,
+        comment
+      }
+    })
+  } catch (err) {
+    console.error('评价失败:', err)
+    res.json({
+      success: false,
+      message: '评价失败'
+    })
+  }
+})
+
+// 获取订单评价信息
+app.get('/orders/:id/ratings', verifyToken, async (req, res) => {
+  const orderId = req.params.id
+
+  try {
+    // 检查订单是否存在且属于当前用户
+    const [orders] = await db.query(
+      'SELECT * FROM orders WHERE id = ? AND (user_id = ? OR collector_id = ?)',
+      [orderId, req.user.id, req.user.id]
+    )
+
+    if (orders.length === 0) {
+      return res.json({
+        success: false,
+        message: '订单不存在或无权限查看'
+      })
+    }
+
+    const order = orders[0]
+    
+    // 获取评价信息
+    const ratings = {
+      userRating: {
+        rating: order.user_rating,
+        comment: order.user_comment,
+        rated: order.user_rated
+      },
+      collectorRating: {
+        rating: order.collector_rating,
+        comment: order.collector_comment,
+        rated: order.collector_rated
+      }
+    }
+
+    res.json({
+      success: true,
+      data: ratings
+    })
+  } catch (err) {
+    console.error('获取评价信息失败:', err)
+    res.json({
+      success: false,
+      message: '获取评价信息失败'
+    })
+  }
+})
+
+// 获取回收员所有评价
+app.get('/collector/ratings', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) {
+    return res.json({
+      success: false,
+      message: '请先登录'
+    })
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    
+    // 获取回收员的所有评价
+    const [ratings] = await db.query(`
+      SELECT 
+        o.id as order_id,
+        o.user_rating as rating,
+        o.user_comment as comment,
+        o.create_time as order_time,
+        u.name as user_name
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      WHERE o.collector_id = ? AND o.user_rated = TRUE
+      ORDER BY o.create_time DESC
+    `, [decoded.id])
+
+    res.json({
+      success: true,
+      data: ratings
+    })
+  } catch (err) {
+    console.error('获取评价列表失败:', err)
+    res.json({
+      success: false,
+      message: '获取评价列表失败'
+    })
+  }
+})
+
+// 获取用户收到的所有评价
+app.get('/user/ratings', verifyToken, async (req, res) => {
+  try {
+    // 获取用户收到的所有评价
+    const [ratings] = await db.query(`
+      SELECT 
+        o.id as order_id,
+        o.collector_rating as rating,
+        o.collector_comment as comment,
+        o.create_time as order_time,
+        c.name as collector_name
+      FROM orders o
+      JOIN collectors c ON o.collector_id = c.id
+      WHERE o.user_id = ? AND o.collector_rated = TRUE
+      ORDER BY o.create_time DESC
+    `, [req.user.id])
+
+    res.json({
+      success: true,
+      data: ratings
+    })
+  } catch (err) {
+    console.error('获取评价列表失败:', err)
+    res.json({
+      success: false,
+      message: '获取评价列表失败'
+    })
+  }
+})
+
 // 启动服务器
 app.listen(port, '0.0.0.0', () => {
   console.log(`服务器运行在 http://localhost:${port}`)
@@ -1415,4 +1697,9 @@ app.listen(port, '0.0.0.0', () => {
   console.log('- GET /admin/today (管理员今日数据)')
   console.log('- GET /admin/recent-orders (管理员最近订单)')
   console.log('- GET /admin/recent-users (管理员最近用户)')
+  console.log('- POST /orders/:id/rate-collector (用户对回收员评价)')
+  console.log('- POST /collector/orders/:id/rate-user (回收员对用户评价)')
+  console.log('- GET /orders/:id/ratings (获取订单评价信息)')
+  console.log('- GET /collector/ratings (获取回收员所有评价)')
+  console.log('- GET /user/ratings (获取用户收到的所有评价)')
 }) 
