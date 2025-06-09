@@ -16,13 +16,13 @@
           wx:for="{{orders}}" 
           wx:key="id">
       <view class="order-header">
-        <text class="order-no">订单号：{{item.orderNo}}</text>
-        <text class="order-status {{item.status}}">{{item.statusText}}</text>
+        <text class="order-no">订单号：{{item.id}}</text>
+        <text class="order-status {{item.statusClass}}">{{item.statusText}}</text>
       </view>
       
       <view class="order-content">
         <view class="category-info">
-          <image src="{{item.categoryIcon}}" mode="aspectFit"></image>
+          <image src="/images/categories/{{item.categoryId}}.png" mode="aspectFit"></image>
           <text>{{item.categoryName}}</text>
         </view>
         <view class="order-info">
@@ -48,25 +48,34 @@
       <view class="order-footer">
         <view class="price">
           <text>预估收益：</text>
-          <text class="amount">¥{{item.estimatedPrice}}</text>
+          <text class="amount">¥{{item.estimatedAmount}}</text>
         </view>
         <view class="actions">
-          <block wx:if="{{item.status === 'pending'}}">
+          <!-- 待接单状态 -->
+          <block wx:if="{{activeTab === 0}}">
             <button class="btn primary" 
                     catchtap="acceptOrder" 
                     data-id="{{item.id}}">接单</button>
           </block>
-          <block wx:if="{{item.status === 'accepted'}}">
+          
+          <!-- 待上门状态 -->
+          <block wx:if="{{activeTab === 1}}">
+            <button class="btn primary" 
+                    catchtap="startService" 
+                    data-id="{{item.id}}"
+                    wx:if="{{item.status === '已接单'}}">开始服务</button>
             <button class="btn primary" 
                     catchtap="completeOrder" 
-                    data-id="{{item.id}}">完成订单</button>
+                    data-id="{{item.id}}"
+                    wx:if="{{item.status === '服务中'}}">完成订单</button>
           </block>
-          <button class="btn default" 
-                  catchtap="contactUser" 
-                  data-phone="{{item.userPhone}}">联系用户</button>
+          
           <button class="btn default" 
                   catchtap="viewOrderDetail" 
                   data-id="{{item.id}}">查看详情</button>
+          <button class="btn default" 
+                  catchtap="contactUser" 
+                  data-phone="{{item.userContact}}">联系用户</button>
         </view>
       </view>
     </view>

@@ -9,7 +9,9 @@ Page({
     ratings: null,
     showRatingModal: false,
     ratingValue: 5,
-    ratingComment: ''
+    ratingComment: '',
+    // 添加评分文字描述
+    ratingTexts: ['很差', '较差', '一般', '较好', '很好']
   },
 
   onLoad(options) {
@@ -31,7 +33,7 @@ Page({
       })
       setTimeout(() => {
         wx.navigateTo({
-          url: '/pages/user/login/login'
+          url: '/pages/login/login'
         })
       }, 1500)
       return
@@ -49,7 +51,21 @@ Page({
         if (res.data.success) {
           const order = res.data.data
           // 格式化时间
-          order.createTime = new Date(order.createTime).toLocaleString()
+          try {
+            order.createTime = new Date(order.createTime).toLocaleString('zh-CN', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+              hour12: false
+            })
+          } catch (e) {
+            console.error('日期格式化错误:', e)
+            order.createTime = order.createTime || '未知时间'
+          }
+          
           this.setData({
             order: order
           })
@@ -88,10 +104,16 @@ Page({
       },
       success: (res) => {
         if (res.data.success) {
+          console.log('获取评价信息成功:', res.data.data)
           this.setData({
             ratings: res.data.data
           })
+        } else {
+          console.error('获取评价信息失败:', res.data.message)
         }
+      },
+      fail: (err) => {
+        console.error('获取评价信息请求失败:', err)
       }
     })
   },
@@ -139,6 +161,7 @@ Page({
 
   // 显示评价弹窗
   showRatingModal() {
+    console.log('显示评价弹窗')
     this.setData({
       showRatingModal: true,
       ratingValue: 5,
@@ -148,6 +171,7 @@ Page({
 
   // 隐藏评价弹窗
   hideRatingModal() {
+    console.log('隐藏评价弹窗')
     this.setData({
       showRatingModal: false
     })
@@ -155,7 +179,8 @@ Page({
 
   // 设置评分值
   setRating(e) {
-    const value = e.currentTarget.dataset.value
+    const value = parseInt(e.currentTarget.dataset.value)
+    console.log('设置评分:', value)
     this.setData({
       ratingValue: value
     })
@@ -171,6 +196,7 @@ Page({
   // 提交评价
   submitRating() {
     const { ratingValue, ratingComment } = this.data
+    console.log('提交评价:', ratingValue, ratingComment)
     
     if (!ratingValue || ratingValue < 1 || ratingValue > 5) {
       wx.showToast({
@@ -193,6 +219,7 @@ Page({
         comment: ratingComment
       },
       success: (res) => {
+        console.log('评价提交响应:', res.data)
         if (res.data.success) {
           this.hideRatingModal()
           wx.showToast({
@@ -208,7 +235,8 @@ Page({
           })
         }
       },
-      fail: () => {
+      fail: (err) => {
+        console.error('评价提交失败:', err)
         wx.showToast({
           title: '操作失败',
           icon: 'none'

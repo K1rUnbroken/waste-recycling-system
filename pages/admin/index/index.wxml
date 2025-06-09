@@ -46,25 +46,6 @@
       </view>
     </view>
 
-    <!-- 快捷操作 -->
-    <view class="section">
-      <view class="section-title">快捷操作</view>
-      <view class="quick-actions">
-        <view class="action-item" bindtap="goToOrderManage">
-          <image class="action-icon" src="/images/admin/order.png" mode="aspectFit"></image>
-          <text class="action-text">订单管理</text>
-        </view>
-        <view class="action-item" bindtap="goToUserManage">
-          <image class="action-icon" src="/images/admin/user.png" mode="aspectFit"></image>
-          <text class="action-text">用户管理</text>
-        </view>
-        <view class="action-item" bindtap="goToCollectorManage">
-          <image class="action-icon" src="/images/admin/collector.png" mode="aspectFit"></image>
-          <text class="action-text">回收员管理</text>
-        </view>
-      </view>
-    </view>
-
     <!-- 最近订单 -->
     <view class="section">
       <view class="section-title">最近订单</view>

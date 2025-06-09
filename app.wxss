@@ -131,4 +131,30 @@ image {
 /* 通用阴影 */
 .shadow { box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1); }
 .shadow-lg { box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1); }
-.shadow-xl { box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1); } 
+.shadow-xl { box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1); }
+
+/* 添加图标字体样式 */
+@font-face {
+  font-family: 'iconfont';
+  src: url('data:font/woff2;charset=utf-8;base64,d09GMgABAAAAAAMsAA0AAAAABvQAAALYAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP0ZGVE0cGh4GVgCCUhEICoIYgVwLEAABNgIkAxQEIAWFCAc3G7sFUVRQUsg+EqrbyjYiiiLBLKLgR/v9/EjuIXkevh/7nXPvfV/igVQTTZPNJCKRSCIymYlEIxGS9U3P5P/lZiDQFMHm9IAoqti0lTnYP8dM/wkOz+VTXs7ZvT8XFbGK2ASHxCE2iU1iw5Ztu9nYGmA7MUyAJ54mUK1PJ7TqM6kJVm0rBHrNCzlYVVKmQqVeRcGWZfEarFbxKb4Hv9cfn5ZFJCozY9uRcxMc+Pr8VXhV8lXCCnWAG84C2kWGMaCAi9LYcUwQR7Gq3gZWVfxfeVXy/88RO8qqVf94IkQlq9YGOEKIfH0jCXxDkQJfJQoEX3k1hDWVwQlsgj3wFCwbshZkD5g0QYNmLVp16Naja9eePfsOHDp26szFG7fuPXjy7MWLV2/eA+3OwJbtu/YcPHLs1LkLl65cA9p38Oi+A4eOHD9z7sLlK9dvgcKlK9eu37h1+87de/cfPnr85NnzFy9fvX7z9t3HTyA9e/7i5avXb95++Pjp85evIH379v3Hjx8/f/4EGgYA') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-star:before {
+  content: "\e611";
+}
+
+.icon-star-filled:before {
+  content: "\e639";
+} 

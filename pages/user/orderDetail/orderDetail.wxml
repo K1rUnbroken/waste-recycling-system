@@ -70,7 +70,10 @@
           <text class="label">我的评分</text>
           <view class="stars">
             <block wx:for="{{5}}" wx:key="index">
-              <image class="star" src="/images/{{index < ratings.userRating.rating ? 'star-active.png' : 'star.png'}}"></image>
+              <view class="star-small-wrapper">
+                <text class="iconfont {{index < ratings.userRating.rating ? 'icon-star-filled' : 'icon-star'}}" style="color: {{index < ratings.userRating.rating ? '#ffcc00' : '#cccccc'}}; font-size: 32rpx;"></text>
+                <text class="star-small-value">{{index+1}}</text>
+              </view>
             </block>
           </view>
         </view>
@@ -86,7 +89,10 @@
           <text class="label">回收员评分</text>
           <view class="stars">
             <block wx:for="{{5}}" wx:key="index">
-              <image class="star" src="/images/{{index < ratings.collectorRating.rating ? 'star-active.png' : 'star.png'}}"></image>
+              <view class="star-small-wrapper">
+                <text class="iconfont {{index < ratings.collectorRating.rating ? 'icon-star-filled' : 'icon-star'}}" style="color: {{index < ratings.collectorRating.rating ? '#ffcc00' : '#cccccc'}}; font-size: 32rpx;"></text>
+                <text class="star-small-value">{{index+1}}</text>
+              </view>
             </block>
           </view>
         </view>
@@ -118,12 +124,15 @@
       <text class="modal-title">评价回收员</text>
       <view class="rating-stars">
         <block wx:for="{{5}}" wx:key="index">
-          <image class="star-large" 
-                 src="/images/{{index < ratingValue ? 'star-active.png' : 'star.png'}}" 
-                 bindtap="setRating" 
-                 data-value="{{index+1}}"></image>
+          <view class="star-item" bindtap="setRating" data-value="{{index+1}}">
+            <view class="star-wrapper">
+              <text class="iconfont {{index < ratingValue ? 'icon-star-filled' : 'icon-star'}}" style="color: {{index < ratingValue ? '#ffcc00' : '#cccccc'}}; font-size: 60rpx;"></text>
+              <text class="star-value">{{index+1}}</text>
+            </view>
+          </view>
         </block>
       </view>
+      <view class="rating-text">{{ratingTexts[ratingValue-1]}}</view>
       <textarea class="comment-input" placeholder="请输入您的评价（选填）" bindinput="inputComment" value="{{ratingComment}}"></textarea>
       <view class="modal-footer">
         <button class="btn" bindtap="hideRatingModal">取消</button>

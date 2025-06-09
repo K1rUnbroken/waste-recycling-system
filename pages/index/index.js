@@ -86,6 +86,130 @@ Page({
 
   // 提交预约
   submitOrder() {
-    // 此处实现提交预约的逻辑
+    // 验证表单数据
+    if (!this.data.selectedCategory) {
+      wx.showToast({
+        title: '请选择回收类别',
+        icon: 'none'
+      })
+      return
+    }
+    
+    if (!this.data.weight) {
+      wx.showToast({
+        title: '请输入预估重量',
+        icon: 'none'
+      })
+      return
+    }
+    
+    if (!this.data.address) {
+      wx.showToast({
+        title: '请输入上门地址',
+        icon: 'none'
+      })
+      return
+    }
+    
+    if (!this.data.contact) {
+      wx.showToast({
+        title: '请输入联系方式',
+        icon: 'none'
+      })
+      return
+    }
+    
+    // 显示加载提示
+    wx.showLoading({
+      title: '提交中...',
+      mask: true
+    })
+    
+    // 获取当前登录用户的token
+    const token = wx.getStorageSync('token')
+    if (!token) {
+      wx.hideLoading()
+      wx.showToast({
+        title: '请先登录',
+        icon: 'none'
+      })
+      setTimeout(() => {
+        wx.navigateTo({
+          url: '/pages/login/login'
+        })
+      }, 1500)
+      return
+    }
+    
+    const app = getApp()
+    // 准备要提交的数据
+    const orderData = {
+      categoryId: this.data.selectedCategory.id,
+      categoryName: this.data.selectedCategory.name,
+      weight: parseFloat(this.data.weight),
+      address: this.data.address,
+      contact: this.data.contact,
+      appointmentDate: this.data.appointmentDate,
+      appointmentTime: this.data.appointmentTime,
+      remark: this.data.remark || ''
+    }
+    
+    console.log('准备提交的订单数据:', orderData)
+    
+    // 发送请求到服务器
+    console.log('向服务器发送请求，URL:', `${app.globalData.baseUrl}/orders`)
+    console.log('发送请求头:', {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    })
+    
+    wx.request({
+      url: `${app.globalData.baseUrl}/orders`,
+      method: 'POST',
+      header: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      data: orderData,
+      success: (res) => {
+        wx.hideLoading()
+        console.log('订单提交响应:', res)
+        console.log('响应数据:', res.data)
+        
+        if (res.data.success) {
+          wx.showToast({
+            title: '预约成功',
+            icon: 'success'
+          })
+          
+          // 重置表单
+          this.setData({
+            selectedCategory: null,
+            weight: '',
+            remark: ''
+          })
+          
+          // 延迟跳转到订单列表页
+          setTimeout(() => {
+            wx.switchTab({
+              url: '/pages/user/order/order'
+            })
+          }, 1500)
+        } else {
+          wx.showToast({
+            title: res.data.message || '提交失败',
+            icon: 'none'
+          })
+        }
+      },
+      fail: (err) => {
+        wx.hideLoading()
+        console.error('订单提交失败:', err)
+        wx.showToast({
+          title: '网络错误，请稍后重试',
+          icon: 'none'
+        })
+      }
+    })
   }
 }) 

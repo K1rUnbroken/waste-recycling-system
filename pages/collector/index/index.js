@@ -128,11 +128,25 @@ Page({
       },
       success: (res) => {
         if (res.data.success) {
-          const orders = res.data.data.map(order => ({
+          // 检查返回的数据结构
+          console.log('订单数据结构:', res.data);
+          
+          let orders = [];
+          if (this.data.activeTab === 0) {
+            // 待接单列表直接返回数组
+            orders = res.data.data || [];
+          } else {
+            // 待上门和已完成返回包含orders数组的对象
+            orders = res.data.data && res.data.data.orders ? res.data.data.orders : [];
+          }
+          
+          // 处理订单数据
+          const processedOrders = orders.map(order => ({
             ...order,
-            createTime: new Date(order.createTime).toLocaleString()
-          }))
-          this.setData({ orders })
+            createTime: order.createTime ? new Date(order.createTime).toLocaleString() : ''
+          }));
+          
+          this.setData({ orders: processedOrders });
         }
       },
       complete: () => {

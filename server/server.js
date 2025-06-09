@@ -860,12 +860,42 @@ app.get('/collector/orders', async (req, res) => {
       })
     }
 
+    // 获取查询参数
+    const { status } = req.query;
+    let statusFilter = '';
+    let statusValues = [];
+
+    // 根据status参数过滤订单
+    if (status) {
+      // 状态映射
+      const statusMapping = {
+        'pending': '待接单',
+        'accepted': ['已接单', '待上门', '服务中'], // 待上门包括这三种状态
+        'completed': '已完成'
+      };
+
+      if (statusMapping[status]) {
+        if (Array.isArray(statusMapping[status])) {
+          // 如果是数组，表示多个状态
+          statusFilter = 'AND status IN (?)';
+          statusValues = [statusMapping[status]];
+        } else {
+          // 单个状态
+          statusFilter = 'AND status = ?';
+          statusValues = [statusMapping[status]];
+        }
+      }
+    }
+
+    console.log('订单查询状态:', status, statusFilter, statusValues);
+
     // 从数据库中查询回收人员的订单
-    const [orders] = await db.query(`
+    let query = `
       SELECT 
         id,
         user_id as userId,
         user_name as userName,
+        user_contact as userContact,
         category_id as categoryId,
         category_name as categoryName,
         weight,
@@ -882,20 +912,32 @@ app.get('/collector/orders', async (req, res) => {
         start_time as startTime,
         complete_time as completeTime
       FROM orders 
-      WHERE collector_id = ?
-      ORDER BY create_time DESC`,
-      [decoded.id]
-    )
+      WHERE collector_id = ?`;
+    
+    // 添加状态过滤条件
+    if (statusFilter) {
+      query += ` ${statusFilter}`;
+    }
+    
+    // 添加排序
+    query += ` ORDER BY create_time DESC`;
+    
+    // 执行查询
+    const [orders] = await db.query(query, [decoded.id, ...(statusValues || [])]);
+    
+    console.log(`查询到 ${orders.length} 条订单记录`);
 
     res.json({
       success: true,
-      data: orders.map(order => ({
-        ...order,
-        createTime: new Date(order.createTime).toLocaleString(),
-        acceptTime: order.acceptTime ? new Date(order.acceptTime).toLocaleString() : null,
-        startTime: order.startTime ? new Date(order.startTime).toLocaleString() : null,
-        completeTime: order.completeTime ? new Date(order.completeTime).toLocaleString() : null
-      }))
+      data: {
+        orders: orders.map(order => ({
+          ...order,
+          createTime: new Date(order.createTime).toLocaleString(),
+          acceptTime: order.acceptTime ? new Date(order.acceptTime).toLocaleString() : null,
+          startTime: order.startTime ? new Date(order.startTime).toLocaleString() : null,
+          completeTime: order.completeTime ? new Date(order.completeTime).toLocaleString() : null
+        }))
+      }
     })
   } catch (err) {
     console.error('获取回收人员订单列表失败:', err)

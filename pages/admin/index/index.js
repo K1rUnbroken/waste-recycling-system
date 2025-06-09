@@ -246,54 +246,6 @@ Page({
     })
   },
 
-  // 跳转到订单管理
-  goToOrderManage() {
-    console.log('[管理员首页] 准备跳转到订单管理页面')
-    wx.navigateTo({
-      url: '/pages/admin/orderManage/index',
-      success: () => console.log('[管理员首页] 跳转到订单管理页面成功'),
-      fail: (err) => {
-        console.error('[管理员首页] 跳转到订单管理页面失败:', err)
-        wx.showToast({
-          title: '页面跳转失败',
-          icon: 'none'
-        })
-      }
-    })
-  },
-
-  // 跳转到用户管理
-  goToUserManage() {
-    console.log('[管理员首页] 准备跳转到用户管理页面')
-    wx.navigateTo({
-      url: '/pages/admin/userManage/index',
-      success: () => console.log('[管理员首页] 跳转到用户管理页面成功'),
-      fail: (err) => {
-        console.error('[管理员首页] 跳转到用户管理页面失败:', err)
-        wx.showToast({
-          title: '页面跳转失败',
-          icon: 'none'
-        })
-      }
-    })
-  },
-
-  // 跳转到回收员管理
-  goToCollectorManage() {
-    console.log('[管理员首页] 准备跳转到回收员管理页面')
-    wx.navigateTo({
-      url: '/pages/admin/collectorManage/index',
-      success: () => console.log('[管理员首页] 跳转到回收员管理页面成功'),
-      fail: (err) => {
-        console.error('[管理员首页] 跳转到回收员管理页面失败:', err)
-        wx.showToast({
-          title: '页面跳转失败',
-          icon: 'none'
-        })
-      }
-    })
-  },
-
   // 退出登录
   logout() {
     console.log('[管理员首页] 准备退出登录')

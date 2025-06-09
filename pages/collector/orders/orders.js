@@ -72,11 +72,44 @@ Page({
         pageSize: this.data.pageSize,
         status: statusMap[this.data.activeTab]
       },
+      header: {
+        'Authorization': `Bearer ${wx.getStorageSync('token')}`
+      },
       success: (res) => {
         if (res.data.success) {
-          const newOrders = res.data.data.orders
+          console.log('订单查询结果:', res.data.data);
+          const newOrders = res.data.data.orders || [];
+          
+          // 处理订单数据，添加状态文本和样式类名
+          const processedOrders = newOrders.map(order => {
+            let statusText = order.status;
+            let statusClass = '';
+            
+            switch(order.status) {
+              case '待接单':
+                statusClass = 'pending';
+                break;
+              case '已接单':
+              case '待上门':
+              case '服务中':
+                statusClass = 'accepted';
+                break;
+              case '已完成':
+                statusClass = 'completed';
+                break;
+              default:
+                statusClass = '';
+            }
+            
+            return {
+              ...order,
+              statusText,
+              statusClass
+            };
+          });
+          
           this.setData({
-            orders: [...this.data.orders, ...newOrders],
+            orders: [...this.data.orders, ...processedOrders],
             page: this.data.page + 1,
             hasMore: newOrders.length === this.data.pageSize
           })
@@ -87,7 +120,8 @@ Page({
           })
         }
       },
-      fail: () => {
+      fail: (err) => {
+        console.error('请求失败:', err);
         wx.showToast({
           title: '网络错误',
           icon: 'none'
@@ -96,6 +130,52 @@ Page({
       complete: () => {
         this.setData({ loading: false })
         wx.stopPullDownRefresh()
+      }
+    })
+  },
+
+  // 开始服务
+  startService(e) {
+    const orderId = e.currentTarget.dataset.id
+    wx.showModal({
+      title: '提示',
+      content: '确定开始上门服务吗？',
+      success: (res) => {
+        if (res.confirm) {
+          wx.request({
+            url: `${getApp().globalData.baseUrl}/collector/orders/${orderId}/start`,
+            method: 'POST',
+            header: {
+              'Authorization': `Bearer ${wx.getStorageSync('token')}`
+            },
+            success: (res) => {
+              if (res.data.success) {
+                wx.showToast({
+                  title: '已开始服务',
+                  icon: 'success'
+                })
+                // 刷新订单列表
+                this.setData({
+                  page: 1,
+                  orders: [],
+                  hasMore: true
+                })
+                this.loadOrders()
+              } else {
+                wx.showToast({
+                  title: res.data.message || '操作失败',
+                  icon: 'none'
+                })
+              }
+            },
+            fail: () => {
+              wx.showToast({
+                title: '网络错误',
+                icon: 'none'
+              })
+            }
+          })
+        }
       }
     })
   },
@@ -111,6 +191,9 @@ Page({
           wx.request({
             url: `${getApp().globalData.baseUrl}/collector/orders/${orderId}/accept`,
             method: 'POST',
+            header: {
+              'Authorization': `Bearer ${wx.getStorageSync('token')}`
+            },
             success: (res) => {
               if (res.data.success) {
                 wx.showToast({
@@ -148,38 +231,12 @@ Page({
     const orderId = e.currentTarget.dataset.id
     wx.showModal({
       title: '提示',
-      content: '确定完成该订单吗？',
+      content: '确定完成该订单吗？完成后需要在订单详情页填写实际重量和金额。',
       success: (res) => {
         if (res.confirm) {
-          wx.request({
-            url: `${getApp().globalData.baseUrl}/collector/orders/${orderId}/complete`,
-            method: 'POST',
-            success: (res) => {
-              if (res.data.success) {
-                wx.showToast({
-                  title: '订单已完成',
-                  icon: 'success'
-                })
-                // 刷新订单列表
-                this.setData({
-                  page: 1,
-                  orders: [],
-                  hasMore: true
-                })
-                this.loadOrders()
-              } else {
-                wx.showToast({
-                  title: res.data.message || '操作失败',
-                  icon: 'none'
-                })
-              }
-            },
-            fail: () => {
-              wx.showToast({
-                title: '网络错误',
-                icon: 'none'
-              })
-            }
+          // 跳转到订单详情页
+          wx.navigateTo({
+            url: `/pages/collector/orderDetail/orderDetail?id=${orderId}`
           })
         }
       }
@@ -197,8 +254,22 @@ Page({
   // 联系用户
   contactUser(e) {
     const phone = e.currentTarget.dataset.phone
-    wx.makePhoneCall({
-      phoneNumber: phone
-    })
+    if (phone) {
+      wx.makePhoneCall({
+        phoneNumber: phone,
+        fail: (err) => {
+          console.error('拨打电话失败:', err)
+          wx.showToast({
+            title: '拨打电话失败',
+            icon: 'none'
+          })
+        }
+      })
+    } else {
+      wx.showToast({
+        title: '用户电话不可用',
+        icon: 'none'
+      })
+    }
   }
 }) 
